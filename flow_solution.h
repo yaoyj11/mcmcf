@@ -11,27 +11,29 @@
 using namespace std;
 using namespace lemon;
 
-typedef map<ListDigraph::Arc, double> Flow;
+typedef map<int, double> Flow;
 typedef ListDigraph::Arc Arc;
 
 class FlowSolution {
 public:
-    Flow used_bw;
-    map<Demand, Flow> flows;
+    vector<double> used_bw;
+    map<int, Flow> flows;
 
-    FlowSolution();
+    FlowSolution(int arc_num);
 
     bool empty();
 
-    void add_flow(Demand d, Flow f);
+    void add_flow(int d, Flow f);
 
-    Flow rm_flow(Demand d);
+    Flow rm_flow(int d);
 
-    Flow get_flow(Demand d);
+    Flow get_flow(int d);
 
-    double flow_on_edge(Arc arc);
+    double flow_on_edge(int arc);
 
     void update(FlowSolution sol, double theta);
+
+    void set_arc_num(int num);
 
 };
 

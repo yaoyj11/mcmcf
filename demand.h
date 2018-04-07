@@ -9,20 +9,27 @@ class Demand {
 public:
     int src, dst;
     int val;
-    Demand(){}
-    Demand(int psrc, int pdst, int pval){
+
+    Demand() {}
+
+    Demand(int psrc, int pdst, int pval) {
         src = psrc;
         dst = pdst;
         val = pval;
     }
 
-    bool operator ==(const Demand& d1) const{
-        return src==d1.src && dst==d1.dst&&val==d1.val;
+    bool operator==(const Demand &d1) const {
+        return src == d1.src && dst == d1.dst && val == d1.val;
     }
 
-    bool operator <(const Demand& d1) const{
+    bool operator<(const Demand &d1) const {
         //This method is meaningless as defined to use Demand object as key
-        return src+dst+val-d1.src-d1.dst-d1.val > 0;
+        return abs(src-d1.src) + abs(dst-d1.dst) + abs(val-d1.val)>0;
+    }
+
+    bool operator>(const Demand &d1) const {
+        //This method is meaningless as defined to use Demand object as key
+        return abs(src-d1.src) + abs(dst-d1.dst) + abs(val-d1.val)>0;
     }
 
 };
