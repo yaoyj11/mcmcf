@@ -14,10 +14,12 @@ FractionalPacking::FractionalPacking() :budget(0), _i(0), min_cost_count(0), cap
     _alpha = 0;
     _potential = 0;
     _rou=0;
+    update_count=0;
 }
 
 FractionalPacking::FractionalPacking(string filename) :budget(0), _i(0), min_cost_count(0), capacity_map(),
                                                        cost_map(), demands(), edges(), beta(), solution(0){
+    update_count=0;
     _m = 0;
     _epsilon = 2.0;
     _alpha = 0;
@@ -130,7 +132,7 @@ Flow FractionalPacking::min_cost_flow(int src, int dst, int d, vector<double> co
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
         duration<double, std::micro> time_span = t3 - t2;
-        std::cout << "min cost flow " << time_span.count() / 1000 << " milli seconds" << endl;
+        min_cost_time+=time_span.count()/1000;
     }
     return map;
 }
@@ -149,18 +151,26 @@ FlowSolution FractionalPacking::fractional_packing(double epsilon=0.05, bool res
     _f = vector<double>(_m,0);
     _delta_phi = vector<double>(edges.size(),0);
     _epsilon = edges.size() -1;
-    time_debug=false;
+    if(time_debug){
+        min_cost_time=0;
+
+        new_ton_time=0;
+
+        potential_time=0;
+
+        update_flow_time=0;
+
+        iteration_time=0;
+    }
     if(restart){
         compute_init_flow();
     }
     while(_epsilon>=epsilon){
-        time_debug=true;
         cout<<current_date_time()<< " epsilon: "<<_epsilon<<endl;
         double potential = update_potential_function();
         while(potential > 3 * _m) {
             //while(_rou>1+_epsilon){
             iteration();
-            time_debug=false;
            _i = (_i+1)%demands.size();
            potential = update_potential_function();
         //cout<<potential<<endl;
@@ -216,7 +226,7 @@ double FractionalPacking::compute_potential_function(FlowSolution sol) {
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
         duration<double, std::micro> time_span = t3 - t2;
-        std::cout << "compute_potential_function " << time_span.count() / 1000 << " milli seconds" << endl;
+        potential_time+=time_span.count()/1000;
     }
     return potential;
 }
@@ -247,7 +257,7 @@ double FractionalPacking::update_potential_function() {
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
         duration<double, std::micro> time_span = t3 - t2;
-        std::cout << "update_potential_function " << time_span.count() / 1000 << " milli seconds" << endl;
+        potential_time+=time_span.count()/1000;
     }
     return _potential;
 }
@@ -271,6 +281,7 @@ void FractionalPacking::iteration() {
     }
 
     vector<double> dual_cost(edges.size(), 0);
+    //TODO: this can be optimized since each iteration only a few edges changed
     for(int i = 0; i<edges.size(); i++){
         //delta_x\PHI(x); m_th row of first term; second term
         dual_cost[i] = _alpha* _f[i]/capacity_map[i] + _alpha*_f[_f.size()-1] * beta[i] + delta_phi_x * beta[i]
@@ -298,34 +309,23 @@ void FractionalPacking::iteration() {
                 flow_change = true;
                 break;
             }else if(abs(flow_x_i[kv.first] - old_fxi[kv.first])>1e-6){
-                //cout<<"flow diff "<<kv.first<<" "<<flow_x_i[kv.first]<<" "<<old_fxi[kv.first]<<endl;
                 flow_change = true;
                 break;
             }
         }
     }
     if(flow_change){
-        if(time_debug){
-            cout<<flow_x_i.size()<<" "<<old_fxi.size()<<endl;
-        }
-        /*
-        for(int i=0;i<x0.size();i++){
-            if(x0[i]!=x1[i]){
-                cout<<i<<" "<<x0[i]<<" "<<x1[i]<<endl;
-            }
-        }
-         */
-        double theta = compute_theta_newton_raphson(x0, x1, low, low, 1.0);
-
+        double theta = compute_theta_newton_raphson(x0, x1, low, 0, 1.0);
         Flow target_fxi = update_flow(old_fxi, flow_x_i, theta);
         solution.rm_flow(_i);
         solution.add_flow(_i, target_fxi);
         double new_potential = compute_potential_function(solution);
         if(new_potential<_potential){
+            update_count++;
             if (time_debug) {
                 high_resolution_clock::time_point t3 = high_resolution_clock::now();
                 duration<double, std::micro> time_span = t3 - t2;
-                std::cout << "iteration " << time_span.count() / 1000 << " milli seconds" << endl;
+                iteration_time+=time_span.count()/1000;
             }
             return;
         }else{
@@ -334,7 +334,7 @@ void FractionalPacking::iteration() {
             if (time_debug) {
                 high_resolution_clock::time_point t3 = high_resolution_clock::now();
                 duration<double, std::micro> time_span = t3 - t2;
-                std::cout << "iteration " << time_span.count() / 1000 << " milli seconds" << endl;
+                iteration_time+=time_span.count()/1000;
             }
         }
     }
@@ -360,7 +360,7 @@ Flow FractionalPacking::update_flow(Flow oldx, Flow newx, double theta) {
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
         duration<double, std::micro> time_span = t3 - t2;
-        std::cout << "update_flow " << time_span.count() / 1000 << " milli seconds" << endl;
+        update_flow_time+=time_span.count()/1000;
     }
     return res;
 }
@@ -384,13 +384,6 @@ double FractionalPacking::compute_theta_newton_raphson(vector<double> x0, vector
     }
     ax[_m - 1] = ax_m;
     ax_star[_m-1] = ax_star_m;
-    /*
-    for(int i=0;i<_m;i++){
-        if(ax[i]!=ax_star[i]){
-            cout<<i<<" "<<ax[i]<<" "<<ax_star[i]<<endl;
-        }
-    }
-     */
     double theta = theta0;
     double new_theta = update_theta(theta, ax, ax_star);
     try{
@@ -405,7 +398,7 @@ double FractionalPacking::compute_theta_newton_raphson(vector<double> x0, vector
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
         duration<double, std::micro> time_span = t3 - t2;
-        std::cout << "compute_theta_newton_raphson " << time_span.count() / 1000 << " milli seconds" << endl;
+        new_ton_time+=time_span.count()/1000;
     }
     if(new_theta < mintheta){
         return mintheta;
@@ -423,7 +416,6 @@ double FractionalPacking::update_theta(double theta, vector<double> u_0, vector<
      * u_i = (1-theta)*u_0 + theta * u_1
      * we f
      */
-    high_resolution_clock::time_point t2 = high_resolution_clock::now();
     double f_theta0 = 0;
     double fprime_theta0 = 0;
     vector<double> t(u_0.size(), 0);
@@ -432,21 +424,10 @@ double FractionalPacking::update_theta(double theta, vector<double> u_0, vector<
     for(int i = 0; i< u_0.size(); i++){
         t[i] = exp(_alpha* ((1-theta)*u_0[i] + theta* u_1[i] - 1)) * _alpha * (u_1[i]-u_0[i]);
         p+=exp(_alpha*((1-theta)*u_0[i]+theta*u_1[i]-1));
-        /*
-        if((1-theta*u_0[i]+theta*u_1[i])<0){
-            cout<<"ui<0: "<<i<< " "<<u_0[i]<<" "<< u_1[i]<<endl;
-        }
-         */
         f_theta0 += t[i];
         t1[i] = t[i]*_alpha*(u_1[i]-u_0[i]);
         fprime_theta0 += t1[i];
     }
-    if (time_debug) {
-        high_resolution_clock::time_point t3 = high_resolution_clock::now();
-        duration<double, std::micro> time_span = t3 - t2;
-        std::cout << "update_theta " << time_span.count() / 1000 << " milli seconds" << endl;
-    }
-    //cout<<"oldtheta: "<<theta<<" new_theta: "<<theta - f_theta0/fprime_theta0<<endl;
     return theta - f_theta0/fprime_theta0;
 }
 

@@ -31,6 +31,8 @@ public:
 
     int min_cost_count;
 
+    int update_count;
+
     int _i;
 
     int _m;
@@ -50,6 +52,16 @@ public:
     double _rou;
 
     bool time_debug;
+
+    double min_cost_time;
+
+    double new_ton_time;
+
+    double potential_time;
+
+    double update_flow_time;
+
+    double iteration_time;
 
     vector<Demand> demands;
 

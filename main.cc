@@ -20,11 +20,24 @@ int main() {
     FractionalPacking fp("/home/yaoyj11/project/mcmcf/data/test-mcf"+filenumber+".net");
     fp.set_buget(cost);
     high_resolution_clock::time_point t1 = high_resolution_clock::now();
+    fp.time_debug=true;
     fp.fractional_packing(0.05);
+    if(fp.time_debug){
+        cout<<"min cost time: "<<fp.min_cost_time<<endl;
+
+        cout<<"new_ton_time: "<<fp.new_ton_time<<endl;
+
+        cout<<"potential_time: "<<fp.potential_time<<endl;
+
+        cout<<"update_flow_time: "<<fp.update_flow_time<<endl;
+
+        cout<<"iteration_time: "<<fp.iteration_time<<endl;
+    }
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     duration<double, std::micro> time_span = t2 - t1;
     std::cout << "It took me " << time_span.count() / 1000000 << " seconds." << endl;
     cout<<"Number of min_cost_flows: "<<fp.min_cost_count<<endl;
+    cout<<"Number of updates: "<<fp.update_count<<endl;
     cout<<"Cost: "<<fp.get_cost()<<endl;
 
 /*
