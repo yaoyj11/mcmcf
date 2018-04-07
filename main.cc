@@ -23,6 +23,8 @@ int main() {
     fp.time_debug=true;
     fp.fractional_packing(0.05);
     if(fp.time_debug){
+
+        cout<<"init flow time: "<<fp.init_flow_time<<endl;
         cout<<"min cost time: "<<fp.min_cost_time<<endl;
 
         cout<<"new_ton_time: "<<fp.new_ton_time<<endl;

@@ -41,7 +41,9 @@ public:
 
     vector<double>_f;
 
-    vector<double> _delta_phi;
+    vector<double>bw_change;
+
+    vector<bool> change;
 
     double _epsilon;
 
@@ -52,6 +54,8 @@ public:
     double _rou;
 
     bool time_debug;
+
+    double init_flow_time;
 
     double min_cost_time;
 
@@ -97,7 +101,7 @@ private:
 
     string current_date_time();
 
-    double compute_potential_function(FlowSolution sol);
+    double compute_potential_function();
 
     double update_potential_function();
 
@@ -105,7 +109,7 @@ private:
 
     Flow update_flow(Flow oldx, Flow newx, double theta);
 
-    double compute_theta_newton_raphson(vector<double>x0, vector<double>x1, double theta0, double mintheta, double
+    double compute_theta_newton_raphson(double theta0, double mintheta, double
     maxtheta);
 
     double update_theta(double theta, vector<double> ax, vector<double> ax_star);

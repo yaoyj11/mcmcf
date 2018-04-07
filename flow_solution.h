@@ -23,9 +23,9 @@ public:
 
     bool empty();
 
-    void add_flow(int d, Flow f);
+    void add_flow(int d, Flow f, vector<bool> &change, vector<double>&bw_change);
 
-    Flow rm_flow(int d);
+    Flow rm_flow(int d, vector<bool> &change, vector<double>&bw_change);
 
     Flow get_flow(int d);
 
