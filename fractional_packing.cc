@@ -105,6 +105,7 @@ void FractionalPacking::read_mcf(string filename) {
 Flow FractionalPacking::min_cost_flow(int src, int dst, int d, vector<double> cost = vector<double>(),
                                       vector<int> cap = vector<int>()) {
     min_cost_count++;
+    //TODO: Optimize min_cost_flow
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     NetworkSimplex<ListDigraph> ns(graph);
     ListDigraph::ArcMap<int> c(graph), u(graph);
