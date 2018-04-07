@@ -3,30 +3,24 @@
 //
 
 #include "flow_solution.h"
-FlowSolution::FlowSolution() {
-    used_bw = Flow();
-    flows = map<Demand, Flow>();
+FlowSolution::FlowSolution(int arc_num):used_bw(arc_num, 0.0),flows() {
 }
 
 bool FlowSolution::empty() {return flows.empty();}
 
-void FlowSolution::add_flow(Demand x, Flow flow) {
+void FlowSolution::add_flow(int x, Flow flow) {
     /* Fcunton to add a flow for a commodity
      * @Params:
      * x: commdofity
-     * flow: Arc -> bw
+     * flow: arc_id -> bw
      */
     flows[x] = flow;
     for(const auto& kv :flow){
-        if (used_bw.count(kv.first) == 0){
-            used_bw[kv.first] = kv.second;
-        }else{
-            used_bw[kv.first] += kv.second;
-        }
+        used_bw[kv.first] += kv.second;
     }
 }
 
-Flow FlowSolution::rm_flow(Demand d) {
+Flow FlowSolution::rm_flow(int d) {
     if(flows.count(d) ==1){
         Flow flow = flows[d];
         flows.erase(d);
@@ -39,15 +33,16 @@ Flow FlowSolution::rm_flow(Demand d) {
     }
 }
 
-Flow FlowSolution::get_flow(Demand d) {
+Flow FlowSolution::get_flow(int d) {
     return flows[d];
 }
 
-double FlowSolution::flow_on_edge(Arc arc) {
-    return used_bw[arc];
+double FlowSolution::flow_on_edge(int arc_id) {
+    return used_bw[arc_id];
 }
 
 void FlowSolution::update(FlowSolution sol, double theta) {
+    //TODO: also update usedbw
     for(const auto&kv: flows){
         Flow flow = kv.second;
         Flow new_flow = sol.flows[kv.first];
@@ -63,3 +58,5 @@ void FlowSolution::update(FlowSolution sol, double theta) {
         }
     }
 }
+
+void FlowSolution::set_arc_num(int num) {used_bw = vector<double>(num, 0);}
