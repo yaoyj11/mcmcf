@@ -242,7 +242,6 @@ string FractionalPacking::current_date_time() {
 double FractionalPacking::compute_potential_function() {
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     _alpha = 1/_epsilon*log(3*_m);
-    cout<<"enter c"<<endl;
     for(const auto&i : change_edges){
         if(change[i]) {
             _u[i] = solution.used_bw[i] / capacity_map[i];
@@ -267,14 +266,12 @@ double FractionalPacking::compute_potential_function() {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
         duration<double, std::micro> time_span = t3 - t2;
         potential_time+=time_span.count()/1000;
-        cout<<"out c"<<endl;
     }
     return _potential;
 }
 
 double FractionalPacking::update_potential_function() {
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
-    cout<<"enter p"<<endl;
     for(const auto&i:change_edges){
         if(change[i]) {
             _u[i] = solution.used_bw[i] / capacity_map[i];
@@ -303,7 +300,6 @@ double FractionalPacking::update_potential_function() {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
         duration<double, std::micro> time_span = t3 - t2;
         potential_time+=time_span.count()/1000;
-        cout<<"out p"<<endl;
     }
     return _potential;
 }
@@ -377,7 +373,7 @@ void FractionalPacking::iteration() {
             update_mab(demand_index, 0);
             solution.rm_flow(demand_index, change, bw_change, change_edges);
             solution.add_flow(demand_index, old_fxi, change, bw_change, change_edges);
-            update_potential_function();
+            compute_potential_function();
             if (time_debug) {
                 high_resolution_clock::time_point t3 = high_resolution_clock::now();
                 duration<double, std::micro> time_span = t3 - t2;
