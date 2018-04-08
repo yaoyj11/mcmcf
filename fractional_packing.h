@@ -70,6 +70,8 @@ public:
 
     double iteration_time;
 
+    double iteration_all_time;
+
     double draw_index_time;
 
     vector<Demand> demands;

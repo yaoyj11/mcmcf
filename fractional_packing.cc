@@ -459,15 +459,14 @@ void FractionalPacking::iteration_all() {
     }
     // let x = x_1 * x_2 ... * x_k, choose x_i in round-robin order, update x_i
     FlowSolution new_solution(cost_map.size());
-    int demand_index = draw_demand_index();
 
     for(int i=0;i<demands.size();i++){
         Demand demand_i = demands[i];
         if(i!=0) {
-            new_solution.add_flow(demand_index, min_cost_flow(demand_i.src, demand_i.dst, demand_i.val),
+            new_solution.add_flow(i, min_cost_flow(demand_i.src, demand_i.dst, demand_i.val),
                                   bw_change, change_edges);
         }else{
-            new_solution.add_flow(demand_index, min_cost_flow(demand_i.src, demand_i.dst, demand_i.val, dual_cost),
+            new_solution.add_flow(i, min_cost_flow(demand_i.src, demand_i.dst, demand_i.val, dual_cost),
                                   bw_change, change_edges);
         }
     }
@@ -482,15 +481,14 @@ void FractionalPacking::iteration_all() {
 
     double old_potential = _potential;
     FlowSolution old_solution = solution;
-    double theta = 1/20.0/_alpha/_alpha/(_rou+_alpha);
+    double theta = compute_theta_newton_raphson(ax, ax_star,0.01,0,1);
     solution.update(new_solution, theta);
     double new_potential = compute_potential_function(true);
     if(new_potential<old_potential){
         if (time_debug) {
             high_resolution_clock::time_point t3 = high_resolution_clock::now();
             duration<double, std::micro> time_span = t3 - t2;
-            iteration_time+=time_span.count()/1000;
-            cout<<time_span.count()/1000<<endl;
+            iteration_all_time+=time_span.count()/1000;
         }
         return;
     }else{
@@ -499,8 +497,7 @@ void FractionalPacking::iteration_all() {
         if (time_debug) {
             high_resolution_clock::time_point t3 = high_resolution_clock::now();
             duration<double, std::micro> time_span = t3 - t2;
-            iteration_time+=time_span.count()/1000;
-            cout<<time_span.count()/1000<<endl;
+            iteration_all_time+=time_span.count()/1000;
         }
     }
 }
