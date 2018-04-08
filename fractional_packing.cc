@@ -70,11 +70,11 @@ FractionalPacking::FractionalPacking(string filename) :budget(0), _i(0), min_cos
 
 FractionalPacking::~FractionalPacking() {
     if(network_simplex!=0){
-        free(network_simplex);
+        delete network_simplex;
         network_simplex=0;
     }
     if(dual_cost!=0){
-        free(dual_cost);
+        delete dual_cost;
         dual_cost=0;
     }
 }
