@@ -301,6 +301,17 @@ double FractionalPacking::update_potential_function() {
     return _potential;
 }
 
+double FractionalPacking::compute_delta_phi_x(){
+    double delta_phi_x = 0;
+    //compute new cost in (4)
+
+    for (int i = 0; i< _f.size(); i++){
+        delta_phi_x += _alpha* _f[i]* _u[i];
+    }
+    return delta_phi_x;
+
+}
+
 void FractionalPacking::iteration() {
     /*
      * at each iteraion, compute the new cost, then choose an x_i to optimize, then update x..
@@ -311,13 +322,7 @@ void FractionalPacking::iteration() {
 
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     //equition(6) delta phi x dot x
-    double delta_phi_x = 0;
-
-    //compute new cost in (4)
-
-    for (int i = 0; i< _f.size(); i++){
-        delta_phi_x += _alpha* _f[i]* _u[i];
-    }
+    double delta_phi_x = compute_delta_phi_x();
 
     vector<double> dual_cost(cost_map.size(), 0);
     for(int i = 0; i<cost_map.size(); i++){

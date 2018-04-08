@@ -133,6 +133,8 @@ private:
     int draw_demand_index();
 
     void update_mab(int index, double r);
+
+    double compute_delta_phi_x();
 };
 
 
