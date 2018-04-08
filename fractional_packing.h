@@ -122,8 +122,7 @@ private:
 
     Flow update_flow(const Flow &oldx, const Flow &newx, double theta);
 
-    double compute_theta_newton_raphson(double theta0, double mintheta, double
-    maxtheta);
+    double compute_theta_newton_raphson(vector<double> & ax, vector<double> &ax_star, double theta0, double mintheta, double maxtheta);
 
     inline double update_theta(double theta, const vector<double> &ax, const vector<double> &ax_star);
 

@@ -389,7 +389,19 @@ void FractionalPacking::iteration() {
     if(flow_change){
         //double low = 1/pow(_alpha, 3);
         //double low = 1/20.0/_alpha/_alpha/(_rou+_alpha);
-        double theta = compute_theta_newton_raphson(0.01, 0, 1.0);
+        vector<double> ax(change_edges.size()+1, 0);
+        double ax_m = _u.back();
+        vector<double>ax_star(change_edges.size() +1, 0);
+        double ax_star_m = _u.back();
+        int index =0;
+        for (const auto&i: change_edges){
+            ax[index] = _u[i];
+            ax_star[index++] = _u[i] + bw_change[i] *inverse_capacity[i];
+            ax_star_m += bw_change[i] * beta[i];
+        }
+        ax[ax.size()-1]=ax_m;
+        ax_star[ax.size() -1]=ax_star_m;
+        double theta = compute_theta_newton_raphson(ax, ax_star,0.01, 0, 1.0);
         Flow target_fxi = update_flow(old_fxi, flow_x_i, theta);
         solution.rm_flow(demand_index, bw_change, change_edges);
         solution.add_flow(demand_index, target_fxi, bw_change, change_edges);
@@ -445,24 +457,14 @@ Flow FractionalPacking::update_flow(const Flow &oldx, const Flow &newx, double t
     return res;
 }
 
-double FractionalPacking::compute_theta_newton_raphson(double theta0 = 0.5,
+double FractionalPacking::compute_theta_newton_raphson(vector<double> & ax, vector<double> &ax_star, double theta0 =
+0.5,
                                                        double mintheta=0, double maxtheta=1) {
     /*
      * Newton's method:
      * x1 = x0-f(x0)/f'(x0)
      */
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
-    vector<double> ax;
-    double ax_m = _u.back();
-    vector<double>ax_star;
-    double ax_star_m = _u.back();
-    for (const auto&i: change_edges){
-        ax.push_back( _u[i]);
-        ax_star.push_back(_u[i] + bw_change[i] *inverse_capacity[i]);
-        ax_star_m += bw_change[i] * beta[i];
-    }
-    ax.push_back(ax_m);
-    ax_star.push_back(ax_star_m);
     double theta = theta0;
     double new_theta = update_theta(theta, ax, ax_star);
     try{
