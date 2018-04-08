@@ -16,17 +16,21 @@ FractionalPacking::FractionalPacking() :budget(0), _i(0), min_cost_count(0), cap
     _rou=0;
     update_count=0;
     network_simplex=0;
+    dual_cost=0;
+    delta_phi_x=0;
 }
 
 FractionalPacking::FractionalPacking(string filename) :budget(0), _i(0), min_cost_count(0), capacity_map(),
                                                        cost_map(), demands(), beta(), solution(0){
     network_simplex=0;
+    dual_cost=0;
     update_count=0;
     _m = 0;
     _epsilon = 2.0;
     _alpha = 0;
     _potential = 0;
     _rou=0;
+    delta_phi_x=0;
     try {
         ifstream is(filename);
         int n;
@@ -68,6 +72,10 @@ FractionalPacking::~FractionalPacking() {
     if(network_simplex!=0){
         free(network_simplex);
         network_simplex=0;
+    }
+    if(dual_cost!=0){
+        free(dual_cost);
+        dual_cost=0;
     }
 }
 
@@ -138,6 +146,7 @@ FlowSolution FractionalPacking::fractional_packing(double epsilon=0.05, bool res
     }
     if(restart){
         network_simplex = new NetworkSimplex<ListDigraph>(graph);
+        dual_cost = new ListDigraph::ArcMap<int>(graph);
         compute_init_flow();
     }
     while(_epsilon>=epsilon){
@@ -177,6 +186,32 @@ Flow FractionalPacking::min_cost_flow(int src, int dst, int d, const vector<doub
         }
         network_simplex->upperMap(u);
     }
+    ListDigraph::NodeMap<int> demand(graph);
+    demand[graph.nodeFromId(src)] = d;
+    demand[graph.nodeFromId(dst)] = -d;
+    network_simplex->supplyMap(demand);
+    network_simplex->run();
+    Flow map;
+    ListDigraph::ArcMap<int> flow_map(graph);
+    network_simplex->flowMap(flow_map);
+    for (int i = 0; i < graph.maxArcId(); i++) {
+        if (flow_map[graph.arcFromId(i)] > 0) {
+            map[i] = flow_map[graph.arcFromId(i)];
+        }
+    }
+    if (time_debug) {
+        high_resolution_clock::time_point t3 = high_resolution_clock::now();
+        duration<double, std::micro> time_span = t3 - t2;
+        min_cost_time+=time_span.count()/1000;
+    }
+    return map;
+}
+
+Flow FractionalPacking::min_cost_flow(int src, int dst, int d, ListDigraph::ArcMap<int> &c) {
+    min_cost_count++;
+    //TODO: Optimize min_cost_flow
+    high_resolution_clock::time_point t2 = high_resolution_clock::now();
+    network_simplex->costMap(c);
     ListDigraph::NodeMap<int> demand(graph);
     demand[graph.nodeFromId(src)] = d;
     demand[graph.nodeFromId(dst)] = -d;
@@ -255,9 +290,11 @@ double FractionalPacking::compute_potential_function() {
     }
      */
     _potential = 0;
+    delta_phi_x=0;
     for(int i = 0; i<_u.size(); i++){
         _f[i] = exp(_alpha * (_u[i] - 1.0));
         _potential += _f[i];
+        delta_phi_x += _alpha* _f[i]* _u[i];
     }
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
@@ -282,16 +319,20 @@ double FractionalPacking::update_potential_function() {
         _rou = _rou>_u[i]?_rou:_u[i];
     }*/
     _potential -= _f.back();
+    delta_phi_x -= _alpha*_f.back()*_u.back();
     for(const auto&i:change_edges){
         if(change[i]) {
             _potential -=_f[i];
+            delta_phi_x-=_alpha*_f[i]*_u[i];
             _f[i] = exp(_alpha * (_u[i] - 1.0));
             _potential += _f[i];
+            delta_phi_x +=_alpha*_f[i]*_u[i];
             change[i]=false;
         }
     }
     _f[_f.size()-1]=exp(_alpha*(_u.back() - 1.0));
     _potential += _f.back();
+    delta_phi_x += _alpha*_f.back()*_u.back();
     change_edges.clear();
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
@@ -322,18 +363,17 @@ void FractionalPacking::iteration() {
 
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     //equition(6) delta phi x dot x
-    double delta_phi_x = compute_delta_phi_x();
 
-    vector<double> dual_cost(cost_map.size(), 0);
     for(int i = 0; i<cost_map.size(); i++){
         //delta_x\PHI(x); m_th row of first term; second term
-        dual_cost[i] = _alpha* _f[i]/capacity_map[i] + _alpha*_f[_f.size()-1] * beta[i] + delta_phi_x * beta[i]
-                                                                                        /9.0/_alpha;
+        (*dual_cost)[graph.arcFromId(i)] = int((_alpha* _f[i]/capacity_map[i] + _alpha*_f[_f.size()-1] * beta[i] +
+                                                delta_phi_x * beta[i] /9.0/_alpha)*10.0);
     }
     // let x = x_1 * x_2 ... * x_k, choose x_i in round-robin order, update x_i
     int demand_index = draw_demand_index();
     Demand demand_i = demands[demand_index];
-    Flow flow_x_i = min_cost_flow(demand_i.src, demand_i.dst, demand_i.val,dual_cost);
+    Flow flow_x_i = min_cost_flow(demand_i.src, demand_i.dst, demand_i.val,*dual_cost);
+    int m=solution.flows.size();
     Flow old_fxi = solution.rm_flow(demand_index, change, bw_change, change_edges);
     solution.add_flow(demand_index, flow_x_i, change, bw_change, change_edges);
     // if flow_x_i and old_fxi are the same, then no update

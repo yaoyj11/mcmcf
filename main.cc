@@ -14,14 +14,14 @@ int main() {
     string filenumber;
     int cost;
     //cin>>filenumber>>cost;
-    //filenumber="796829";
-    //cost = 78134;
+    filenumber="796829";
+    cost = 78134;
     //lptime: 72s
     //python time 696
     //mcmcf time 13s
 
-    filenumber="478237";
-    cost = 84121;
+    //filenumber="478237";
+    //cost = 84121;
     //lptime: 64.95
     //python time: 739
     FractionalPacking fp("/home/yaoyj11/project/mcmcf/data/test-mcf"+filenumber+".net");
