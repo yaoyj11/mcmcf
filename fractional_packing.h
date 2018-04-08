@@ -5,6 +5,7 @@
 #include<string>
 #include<vector>
 #include <time.h>
+#include <stdlib.h>
 #include <ctime>
 #include <ratio>
 #include <chrono>
@@ -123,6 +124,10 @@ private:
     vector<double> mab_reward;
 
     vector<double> mab_index;
+
+    double mab_average;
+
+    bool mab_flag;
 
     vector<int> mab_times;
 

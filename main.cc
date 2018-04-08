@@ -1,5 +1,6 @@
 #include <iostream>
 #include <ctime>
+#include <stdlib.h>
 #include <ratio>
 #include <chrono>
 #include "fractional_packing.h"
@@ -8,15 +9,19 @@ using namespace std;
 using namespace std::chrono;
 
 int main() {
-
+    srand(41);
     std::cout << "Hello, World!" << std::endl;
     string filenumber;
     int cost;
     //cin>>filenumber>>cost;
-    filenumber="796829";
-    cost = 78134;
+    //filenumber="796829";
+    //cost = 78134;
     //lptime: 72s
     //python time 696
+    //mcmcf time 13s
+
+    filenumber="478237";
+    cost = 84121;
     FractionalPacking fp("/home/yaoyj11/project/mcmcf/data/test-mcf"+filenumber+".net");
     fp.set_buget(cost);
     high_resolution_clock::time_point t1 = high_resolution_clock::now();

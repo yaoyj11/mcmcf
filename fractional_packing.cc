@@ -118,6 +118,8 @@ FlowSolution FractionalPacking::fractional_packing(double epsilon=0.05, bool res
     mab_reward = vector<double>(demands.size(),0);
     mab_index = vector<double>(demands.size(), 0);
     mab_times = vector<int>(demands.size(), 0);
+    mab_average=0;
+    mab_flag=true;
     change = vector<bool>(edges.size(), false);
     bw_change = vector<double>(edges.size(),0);
     _epsilon = edges.size() -1;
@@ -248,10 +250,12 @@ double FractionalPacking::compute_potential_function() {
             bw_change[i] = 0;
         }
     }
+    /*
     _rou=0;
     for(int i=0;i<_u.size(); i++){
         _rou = _rou>_u[i]?_rou:_u[i];
     }
+     */
     _potential = 0;
     for(int i = 0; i<_u.size(); i++){
         _f[i] = exp(_alpha * (_u[i] - 1.0));
@@ -274,10 +278,11 @@ double FractionalPacking::update_potential_function() {
             _u[_u.size() - 1] += bw_change[i] * beta[i];
         }
     }
+    /*
     _rou=0;
     for(int i=0;i<_u.size(); i++){
         _rou = _rou>_u[i]?_rou:_u[i];
-    }
+    }*/
     _potential = 0;
     for(int i = 0; i<change.size(); i++){
         if(change[i]) {
@@ -328,8 +333,6 @@ void FractionalPacking::iteration() {
     int m=solution.flows.size();
     Flow old_fxi = solution.rm_flow(demand_index, change, bw_change);
     solution.add_flow(demand_index, flow_x_i, change, bw_change);
-    //double low = 1/pow(_alpha, 3);
-    double low = 1/20.0/_alpha/_alpha/(_rou+_alpha);
     // if flow_x_i and old_fxi are the same, then no update
     //TODO: if no update, there is no need to compute potential_function again
     bool flow_change = false;
@@ -347,7 +350,9 @@ void FractionalPacking::iteration() {
         }
     }
     if(flow_change){
-        double theta = compute_theta_newton_raphson(low, 0, 1.0);
+        //double low = 1/pow(_alpha, 3);
+        //double low = 1/20.0/_alpha/_alpha/(_rou+_alpha);
+        double theta = compute_theta_newton_raphson(0.01, 0, 1.0);
         Flow target_fxi = update_flow(old_fxi, flow_x_i, theta);
         solution.rm_flow(demand_index, change, bw_change);
         solution.add_flow(demand_index, target_fxi, change, bw_change);
@@ -479,24 +484,33 @@ double FractionalPacking::get_cost() {
 }
 
 int FractionalPacking::draw_demand_index(){
-    if(_i<demands.size()) {
+    if(mab_flag) {
         int res = _i;
+        if(_i==demands.size()-1){
+            mab_flag= false;
+        }
         _i = (++_i)%demands.size();
         return res;
     } else{
         high_resolution_clock::time_point t2 = high_resolution_clock::now();
         int res = 0;
-        for(int i=1;i<mab_index.size(); i++){
-            if(mab_index[i]>mab_index[res]){
-                res = i;
+        for(_i=(++_i)%demands.size();;_i=(++_i)%demands.size()){
+            if(mab_index[_i]>mab_average){
+                if (time_debug) {
+                    high_resolution_clock::time_point t3 = high_resolution_clock::now();
+                    duration<double, std::micro> time_span = t3 - t2;
+                    draw_index_time+=time_span.count()/1000;
+                }
+                return _i;
+            }else if(rand()%3==0){
+                if (time_debug) {
+                    high_resolution_clock::time_point t3 = high_resolution_clock::now();
+                    duration<double, std::micro> time_span = t3 - t2;
+                    draw_index_time+=time_span.count()/1000;
+                }
+                return _i;
             }
         }
-        if (time_debug) {
-            high_resolution_clock::time_point t3 = high_resolution_clock::now();
-            duration<double, std::micro> time_span = t3 - t2;
-            draw_index_time+=time_span.count()/1000;
-        }
-        return res;
     }
 }
 
@@ -505,7 +519,8 @@ void FractionalPacking::update_mab(int index, double r) {
     //mab_reward[index] = (mab_reward[index]*mab_times[index] + r)/(++mab_times[index]);
     //mab_index[index] = mab_reward[index] + sqrt(3/mab_times[index]);
     double theta = 0.8;
-    mab_index[index] = (1-theta)*mab_index[index] + theta*r;
+    mab_average = mab_average+(r-mab_index[index])/mab_index.size();
+    mab_index[index] = r;
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
         duration<double, std::micro> time_span = t3 - t2;
