@@ -207,11 +207,11 @@ Flow FractionalPacking::min_cost_flow(int src, int dst, int d, const vector<doub
     return map;
 }
 
-Flow FractionalPacking::min_cost_flow(int src, int dst, int d, ListDigraph::ArcMap<int> &c) {
+Flow FractionalPacking::min_cost_flow(int src, int dst, int d, ListDigraph::ArcMap<int> *c) {
     min_cost_count++;
     //TODO: Optimize min_cost_flow
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
-    network_simplex->costMap(c);
+    network_simplex->costMap(*c);
     ListDigraph::NodeMap<int> demand(graph);
     demand[graph.nodeFromId(src)] = d;
     demand[graph.nodeFromId(dst)] = -d;
@@ -366,14 +366,14 @@ void FractionalPacking::iteration() {
 
     for(int i = 0; i<cost_map.size(); i++){
         //delta_x\PHI(x); m_th row of first term; second term
-        (*dual_cost)[graph.arcFromId(i)] = int((_alpha* _f[i]/capacity_map[i] + _alpha*_f[_f.size()-1] * beta[i] +
+        dual_cost->operator[](graph.arcFromId(i)) = int((_alpha* _f[i]/capacity_map[i] + _alpha*_f[_f.size()-1] *
+                                                                                         beta[i] +
                                                 delta_phi_x * beta[i] /9.0/_alpha)*10.0);
     }
     // let x = x_1 * x_2 ... * x_k, choose x_i in round-robin order, update x_i
     int demand_index = draw_demand_index();
     Demand demand_i = demands[demand_index];
-    Flow flow_x_i = min_cost_flow(demand_i.src, demand_i.dst, demand_i.val,*dual_cost);
-    int m=solution.flows.size();
+    Flow flow_x_i = min_cost_flow(demand_i.src, demand_i.dst, demand_i.val,dual_cost);
     Flow old_fxi = solution.rm_flow(demand_index, change, bw_change, change_edges);
     solution.add_flow(demand_index, flow_x_i, change, bw_change, change_edges);
     // if flow_x_i and old_fxi are the same, then no update

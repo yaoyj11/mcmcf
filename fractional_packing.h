@@ -99,7 +99,7 @@ public:
 
     Flow min_cost_flow(int src, int dst, int val, const vector<double> &cost, vector<int> cap = vector<int>());
 
-    Flow min_cost_flow(int src, int dst, int d, ListDigraph::ArcMap<int> &c);
+    Flow min_cost_flow(int src, int dst, int d, ListDigraph::ArcMap<int> *c);
 
     void set_buget(double b);
 
