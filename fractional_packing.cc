@@ -8,7 +8,7 @@
 using namespace std::chrono;
 
 FractionalPacking::FractionalPacking() :budget(0), _i(0), min_cost_count(0), capacity_map(), cost_map(), demands()
-        , edges(), beta(), solution(0){
+        , beta(), solution(0){
     _m = 0;
     _epsilon = 2.0;
     _alpha = 0;
@@ -19,7 +19,7 @@ FractionalPacking::FractionalPacking() :budget(0), _i(0), min_cost_count(0), cap
 }
 
 FractionalPacking::FractionalPacking(string filename) :budget(0), _i(0), min_cost_count(0), capacity_map(),
-                                                       cost_map(), demands(), edges(), beta(), solution(0){
+                                                       cost_map(), demands(), beta(), solution(0){
     network_simplex=0;
     update_count=0;
     _m = 0;
@@ -48,7 +48,6 @@ FractionalPacking::FractionalPacking(string filename) :budget(0), _i(0), min_cos
             ListDigraph::Arc arc = graph.addArc(graph.nodeFromId(s), graph.nodeFromId(t));
             capacity_map[i] = cap;
             cost_map[i] = cost;
-            edges.push_back(Edge(s,t,cap,cost));
         }
         is >> n;
         std::cout << n << " demands" << endl;
@@ -87,7 +86,6 @@ void FractionalPacking::read_mcf(string filename) {
         std::cout << n << " edges" << endl;
         capacity_map = vector<int>(n, 0);
         cost_map = vector<double>(n, 0);
-        edges = vector<Edge>();
         solution.set_arc_num(n);
         for (int i = 0; i < n; i++) {
             int index, s, t, cap, cost;
@@ -95,7 +93,6 @@ void FractionalPacking::read_mcf(string filename) {
             ListDigraph::Arc arc = graph.addArc(graph.nodeFromId(s), graph.nodeFromId(t));
             capacity_map[i] = cap;
             cost_map[i] = cost;
-            edges.push_back(Edge(s,t,cap,cost));
         }
         is >> n;
         std::cout << n << " demands" << endl;
@@ -112,7 +109,7 @@ void FractionalPacking::read_mcf(string filename) {
 }
 
 FlowSolution FractionalPacking::fractional_packing(double epsilon=0.05, bool restart) {
-    _m = edges.size() + 1;
+    _m = cost_map.size() + 1;
     _u = vector<double>(_m,0);
     _f = vector<double>(_m,0);
     mab_reward = vector<double>(demands.size(),0);
@@ -120,9 +117,9 @@ FlowSolution FractionalPacking::fractional_packing(double epsilon=0.05, bool res
     mab_times = vector<int>(demands.size(), 0);
     mab_average=0;
     mab_flag=true;
-    change = vector<bool>(edges.size(), false);
-    bw_change = vector<double>(edges.size(),0);
-    _epsilon = edges.size() -1;
+    change = vector<bool>(cost_map.size(), false);
+    bw_change = vector<double>(cost_map.size(),0);
+    _epsilon = cost_map.size() -1;
     if(time_debug){
 
         init_flow_time = 0;
@@ -203,8 +200,8 @@ Flow FractionalPacking::min_cost_flow(int src, int dst, int d, const vector<doub
 
 void FractionalPacking::set_buget(double b) {
     budget = b;
-    beta = vector<double>(edges.size(), 0);
-    for(int i = 0; i< edges.size(); i++){
+    beta = vector<double>(cost_map.size(), 0);
+    for(int i = 0; i< cost_map.size(); i++){
         beta[i] = cost_map[i]/budget;
     }
 }
@@ -212,7 +209,7 @@ void FractionalPacking::set_buget(double b) {
 
 void FractionalPacking::compute_init_flow() {
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
-    solution.set_arc_num(edges.size());
+    solution.set_arc_num(cost_map.size());
     for(int i=0;i<demands.size();i++){
         Demand d = demands[i];
         Flow f = min_cost_flow(d.src, d.dst, d.val, cost_map, capacity_map);
@@ -322,8 +319,8 @@ void FractionalPacking::iteration() {
         delta_phi_x += _alpha* _f[i]* _u[i];
     }
 
-    vector<double> dual_cost(edges.size(), 0);
-    for(int i = 0; i<edges.size(); i++){
+    vector<double> dual_cost(cost_map.size(), 0);
+    for(int i = 0; i<cost_map.size(); i++){
         //delta_x\PHI(x); m_th row of first term; second term
         dual_cost[i] = _alpha* _f[i]/capacity_map[i] + _alpha*_f[_f.size()-1] * beta[i] + delta_phi_x * beta[i]
                                                                                         /9.0/_alpha;
@@ -420,7 +417,7 @@ double FractionalPacking::compute_theta_newton_raphson(double theta0 = 0.5,
     double ax_m = _u.back();
     vector<double>ax_star;
     double ax_star_m = _u.back();
-    for (int i = 0; i< edges.size(); i++){
+    for (int i = 0; i< cost_map.size(); i++){
         if(change[i]) {
             ax.push_back( _u[i]);
             ax_star.push_back(_u[i] + bw_change[i] / capacity_map[i]);
@@ -478,7 +475,7 @@ double FractionalPacking::update_theta(double theta, const vector<double> &u_0, 
 
 double FractionalPacking::get_cost() {
     double c =0;
-    for(int i = 0; i<edges.size(); i++){
+    for(int i = 0; i<cost_map.size(); i++){
         c += cost_map[i] * solution.used_bw[i];
     }
     return c;
@@ -526,5 +523,4 @@ void FractionalPacking::update_mab(int index, double r) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
         duration<double, std::micro> time_span = t3 - t2;
         draw_index_time+=time_span.count()/1000;
-    }
-}
+    }}

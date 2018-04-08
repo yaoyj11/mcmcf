@@ -16,7 +16,6 @@
 #include<lemon/core.h>
 #include <lemon/network_simplex.h>
 #include "demand.h"
-#include "edge.h"
 #include "flow_solution.h"
 
 #ifndef MCMCF_FRACTIONALPACKING_H
@@ -73,8 +72,6 @@ public:
     double draw_index_time;
 
     vector<Demand> demands;
-
-    vector<Edge> edges;
 
     vector<int> capacity_map;
 
