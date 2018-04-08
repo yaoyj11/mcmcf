@@ -10,6 +10,7 @@
 #include <ratio>
 #include <chrono>
 #include<map>
+#include<set>
 #include<cmath>
 #include <stdexcept>
 #include<lemon/list_graph.h>
@@ -45,7 +46,7 @@ public:
 
     vector<double>bw_change;
 
-    vector<int> change_edges;
+    set<int> change_edges;
 
     vector<bool> change;
 

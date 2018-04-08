@@ -461,7 +461,7 @@ double FractionalPacking::compute_theta_newton_raphson(double theta0 = 0.5,
     double ax_m = _u.back();
     vector<double>ax_star;
     double ax_star_m = _u.back();
-    for (int i = 0; i< cost_map.size(); i++){
+    for (const auto&i: change_edges){
         if(change[i]) {
             ax.push_back( _u[i]);
             ax_star.push_back(_u[i] + bw_change[i] / capacity_map[i]);

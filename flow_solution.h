@@ -2,6 +2,7 @@
 // Created by yaoyj11 on 4/5/18.
 //
 #include <map>
+#include<set>
 #include <lemon/list_graph.h>
 #include "demand.h"
 
@@ -23,9 +24,9 @@ public:
 
     bool empty();
 
-    void add_flow(int d, Flow f, vector<bool> &change, vector<double>&bw_change, vector<int>&change_edges);
+    void add_flow(int d, Flow f, vector<bool> &change, vector<double>&bw_change, set<int>&change_edges);
 
-    Flow rm_flow(int d, vector<bool> &change, vector<double>&bw_change, vector<int> &change_edges);
+    Flow rm_flow(int d, vector<bool> &change, vector<double>&bw_change, set<int> &change_edges);
 
     Flow get_flow(int d);
 
