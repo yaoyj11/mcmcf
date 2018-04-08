@@ -1,11 +1,11 @@
 CC=g++
-FLAGS=-g -std=c++11
+FLAGS=-pg -std=c++11
 LIB = -lemon
 
 all: mcmcf
 
 mcmcf:flow_solution.o main.o fractional_packing.o
-	$(CC) $(LIB) -o mcmcf main.o flow_solution.o fractional_packing.o
+	$(CC) $(FLAGS) $(LIB) -o mcmcf main.o flow_solution.o fractional_packing.o
 
 flow_solution.o: flow_solution.cc demand.h flow_solution.h
 	$(CC) $(FLAGS) -c flow_solution.cc

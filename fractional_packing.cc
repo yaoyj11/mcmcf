@@ -345,12 +345,10 @@ double FractionalPacking::update_potential_function() {
 double FractionalPacking::compute_delta_phi_x(){
     double delta_phi_x = 0;
     //compute new cost in (4)
-
     for (int i = 0; i< _f.size(); i++){
         delta_phi_x += _alpha* _f[i]* _u[i];
     }
     return delta_phi_x;
-
 }
 
 void FractionalPacking::iteration() {
@@ -364,11 +362,12 @@ void FractionalPacking::iteration() {
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     //equition(6) delta phi x dot x
 
+    double tmp1 = _alpha * _f.back();
+    double tmp2 = delta_phi_x/9.0/_alpha;
     for(int i = 0; i<cost_map.size(); i++){
         //delta_x\PHI(x); m_th row of first term; second term
-        dual_cost->operator[](graph.arcFromId(i)) = int((_alpha* _f[i]/capacity_map[i] + _alpha*_f[_f.size()-1] *
-                                                                                         beta[i] +
-                                                delta_phi_x * beta[i] /9.0/_alpha)*10.0);
+        dual_cost->operator[](graph.arcFromId(i)) = int((_alpha* _f[i]/capacity_map[i] +
+                                                   tmp1 * beta[i] + tmp2 * beta[i])*10.0);
     }
     // let x = x_1 * x_2 ... * x_k, choose x_i in round-robin order, update x_i
     int demand_index = draw_demand_index();
