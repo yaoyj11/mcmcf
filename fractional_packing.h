@@ -114,7 +114,7 @@ private:
 
     string current_date_time();
 
-    double compute_potential_function();
+    double compute_potential_function(bool recompute_u=false);
 
     double update_potential_function();
 

@@ -47,3 +47,26 @@ double FlowSolution::flow_on_edge(int arc_id) {
 }
 
 void FlowSolution::set_arc_num(int num) {used_bw = vector<double>(num, 0);}
+
+void FlowSolution::update(const FlowSolution &sol, double theta) {
+    for(int i=0; i<used_bw.size(); i++){
+        used_bw[i] = used_bw[i]*(1-theta) + theta* sol.used_bw[i];
+    }
+    map<int, Flow> new_flows;
+    for(const auto&kv: flows){
+        Flow flow;
+        Flow new_flow = sol.flows.at(kv.first);
+        for (const auto &edgebw: flow){
+            flow[edgebw.first] = (1 - theta)* edgebw.second;
+        }
+        for(const auto& edgebw: new_flow){
+            if(flow.count(edgebw.first) ==0){
+                flow[edgebw.first] = theta* edgebw.second;
+            }else{
+                flow[edgebw.first] += theta* edgebw.second;
+            }
+        }
+        new_flows[kv.first] = flow;
+    }
+    flows = new_flows;
+}

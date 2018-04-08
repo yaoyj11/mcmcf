@@ -151,6 +151,7 @@ FlowSolution FractionalPacking::fractional_packing(double epsilon=0.05, bool res
         network_simplex = new NetworkSimplex<ListDigraph>(graph);
         dual_cost = new ListDigraph::ArcMap<int>(graph);
         compute_init_flow();
+        compute_potential_function(true);
     }
     while(_epsilon>=epsilon){
         cout<<current_date_time()<< " epsilon: "<<_epsilon<<endl;
@@ -276,10 +277,10 @@ string FractionalPacking::current_date_time() {
     return buf;
 }
 
-double FractionalPacking::compute_potential_function() {
+double FractionalPacking::compute_potential_function(bool recompute_u) {
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     _alpha = 1/_epsilon*log(3*_m);
-    if(!change_edges.empty()){
+    if(recompute_u){
         _u[_u.size()-1]=0;
         for(int i=0; i<cost_map.size(); i++) {
             _u[i] = solution.used_bw[i] * inverse_capacity[i];
@@ -425,7 +426,7 @@ void FractionalPacking::iteration() {
             update_mab(demand_index, 0);
             solution.rm_flow(demand_index, bw_change, change_edges);
             solution.add_flow(demand_index, old_fxi, bw_change, change_edges);
-            compute_potential_function();
+            compute_potential_function(true);
             if (time_debug) {
                 high_resolution_clock::time_point t3 = high_resolution_clock::now();
                 duration<double, std::micro> time_span = t3 - t2;
@@ -480,11 +481,10 @@ void FractionalPacking::iteration_all() {
 
     double theta = compute_theta_newton_raphson(ax, ax_star,0.01, 0, 1.0);
     double old_potential = _potential;
-
-    double new_potential = compute_potential_function();
+    FlowSolution old_solution = solution;
+    solution.update(new_solution, theta);
+    double new_potential = compute_potential_function(true);
     if(new_potential<old_potential){
-        update_mab(demand_index, 1-new_potential/old_potential);
-        update_count++;
         if (time_debug) {
             high_resolution_clock::time_point t3 = high_resolution_clock::now();
             duration<double, std::micro> time_span = t3 - t2;
@@ -492,9 +492,8 @@ void FractionalPacking::iteration_all() {
         }
         return;
     }else{
-        update_mab(demand_index, 0);
-        solution.rm_flow(demand_index, bw_change, change_edges);
-        compute_potential_function();
+        solution = old_solution;
+        compute_potential_function(true);
         if (time_debug) {
             high_resolution_clock::time_point t3 = high_resolution_clock::now();
             duration<double, std::micro> time_span = t3 - t2;
@@ -572,10 +571,8 @@ inline double FractionalPacking::update_theta(double theta, const vector<double>
     double fprime_theta0 = 0;
     vector<double> t(u_0.size(), 0);
     vector<double> t1(u_1.size(), 0);
-    double p=0;
     for(int i = 0; i< u_0.size(); i++){
         t[i] = exp(_alpha* ((1-theta)*u_0[i] + theta* u_1[i] - 1)) * _alpha * (u_1[i]-u_0[i]);
-        p+=exp(_alpha*((1-theta)*u_0[i]+theta*u_1[i]-1));
         f_theta0 += t[i];
         t1[i] = t[i]*_alpha*(u_1[i]-u_0[i]);
         fprime_theta0 += t1[i];
