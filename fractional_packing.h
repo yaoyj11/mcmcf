@@ -125,7 +125,7 @@ private:
     double compute_theta_newton_raphson(double theta0, double mintheta, double
     maxtheta);
 
-    double update_theta(double theta, const vector<double> &ax, const vector<double> &ax_star);
+    inline double update_theta(double theta, const vector<double> &ax, const vector<double> &ax_star);
 
     vector<double> mab_reward;
 

@@ -1,5 +1,5 @@
 CC=g++
-FLAGS=-O3 -std=c++11
+FLAGS=-Ofast -std=c++11
 LIB = -lemon
 
 all: mcmcf

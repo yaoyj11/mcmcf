@@ -488,7 +488,7 @@ double FractionalPacking::compute_theta_newton_raphson(double theta0 = 0.5,
     }
 }
 
-double FractionalPacking::update_theta(double theta, const vector<double> &u_0, const vector<double> &u_1) {
+inline double FractionalPacking::update_theta(double theta, const vector<double> &u_0, const vector<double> &u_1) {
     /*
      * delta(\phi)/delta(\theta) = sum(\alpha * f(u_i)*a_i*(x1-x0))= sum(\alpha* f*(u_i_theta0)*(u_1 -u_0),
      * where x0 is previous solution and x1 is new solution and x = (1-theta)* x0 + theta*x1
