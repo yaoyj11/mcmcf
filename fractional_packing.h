@@ -67,6 +67,8 @@ public:
 
     double iteration_time;
 
+    double draw_index_time;
+
     vector<Demand> demands;
 
     vector<Edge> edges;
@@ -79,15 +81,19 @@ public:
 
     ListDigraph graph;
 
+    NetworkSimplex<ListDigraph> *network_simplex;
+
     FlowSolution solution;
 
     FractionalPacking();
 
     FractionalPacking(string file_name);
 
+    ~FractionalPacking();
+
     void read_mcf(string filename);
 
-    Flow min_cost_flow(int src, int dst, int val, vector<double> cost, vector<int> cap);
+    Flow min_cost_flow(int src, int dst, int val, const vector<double> &cost, vector<int> cap = vector<int>());
 
     void set_buget(double b);
 
@@ -107,13 +113,22 @@ private:
 
     void iteration();
 
-    Flow update_flow(Flow oldx, Flow newx, double theta);
+    Flow update_flow(const Flow &oldx, const Flow &newx, double theta);
 
     double compute_theta_newton_raphson(double theta0, double mintheta, double
     maxtheta);
 
-    double update_theta(double theta, vector<double> ax, vector<double> ax_star);
+    double update_theta(double theta, const vector<double> &ax, const vector<double> &ax_star);
 
+    vector<double> mab_reward;
+
+    vector<double> mab_index;
+
+    vector<int> mab_times;
+
+    int draw_demand_index();
+
+    void update_mab(int index, double r);
 };
 
 

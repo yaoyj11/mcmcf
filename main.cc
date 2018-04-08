@@ -34,6 +34,7 @@ int main() {
         cout<<"update_flow_time: "<<fp.update_flow_time<<endl;
 
         cout<<"iteration_time: "<<fp.iteration_time<<endl;
+        cout<<"draw index time: "<<fp.draw_index_time<<endl;
     }
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     duration<double, std::micro> time_span = t2 - t1;

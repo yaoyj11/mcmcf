@@ -15,10 +15,12 @@ FractionalPacking::FractionalPacking() :budget(0), _i(0), min_cost_count(0), cap
     _potential = 0;
     _rou=0;
     update_count=0;
+    network_simplex=0;
 }
 
 FractionalPacking::FractionalPacking(string filename) :budget(0), _i(0), min_cost_count(0), capacity_map(),
                                                        cost_map(), demands(), edges(), beta(), solution(0){
+    network_simplex=0;
     update_count=0;
     _m = 0;
     _epsilon = 2.0;
@@ -63,6 +65,13 @@ FractionalPacking::FractionalPacking(string filename) :budget(0), _i(0), min_cos
     }
 }
 
+FractionalPacking::~FractionalPacking() {
+    if(network_simplex!=0){
+        free(network_simplex);
+        network_simplex=0;
+    }
+}
+
 void FractionalPacking::read_mcf(string filename) {
     try {
         ifstream is(filename);
@@ -102,29 +111,81 @@ void FractionalPacking::read_mcf(string filename) {
     }
 }
 
-Flow FractionalPacking::min_cost_flow(int src, int dst, int d, vector<double> cost = vector<double>(),
-                                      vector<int> cap = vector<int>()) {
+FlowSolution FractionalPacking::fractional_packing(double epsilon=0.05, bool restart) {
+    _m = edges.size() + 1;
+    _u = vector<double>(_m,0);
+    _f = vector<double>(_m,0);
+    mab_reward = vector<double>(demands.size(),0);
+    mab_index = vector<double>(demands.size(), 0);
+    mab_times = vector<int>(demands.size(), 0);
+    change = vector<bool>(edges.size(), false);
+    bw_change = vector<double>(edges.size(),0);
+    _epsilon = edges.size() -1;
+    if(time_debug){
+
+        init_flow_time = 0;
+
+        min_cost_time=0;
+
+        new_ton_time=0;
+
+        potential_time=0;
+
+        update_flow_time=0;
+
+        iteration_time=0;
+
+        draw_index_time = 0;
+    }
+    if(restart){
+        network_simplex = new NetworkSimplex<ListDigraph>(graph);
+        compute_init_flow();
+    }
+    while(_epsilon>=epsilon){
+        cout<<current_date_time()<< " epsilon: "<<_epsilon<<endl;
+        compute_potential_function();
+        while(_potential > 3 * _m) {
+            //while(_rou>1+_epsilon){
+            iteration();
+        //cout<<potential<<endl;
+        }
+        if(_epsilon == epsilon){
+            break;
+        }
+        _epsilon /= 2.0;
+        if(_epsilon<epsilon){
+            _epsilon = epsilon;
+        }
+    }
+    return solution;
+}
+
+Flow FractionalPacking::min_cost_flow(int src, int dst, int d, const vector<double> &cost,
+                                      vector<int> cap) {
     min_cost_count++;
     //TODO: Optimize min_cost_flow
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
-    NetworkSimplex<ListDigraph> ns(graph);
-    ListDigraph::ArcMap<int> c(graph), u(graph);
+    ListDigraph::ArcMap<int> c(graph);
     double scale = 10.0;
     for (int i = 0; i < cost.size(); i++) {
         c[graph.arcFromId(i)] = int(cost[i] * scale);
     }
-    ns.costMap(c);
+    network_simplex->costMap(c);
     if (!cap.empty()) {
+        ListDigraph::ArcMap<int> u(graph);
         for (int i = 0; i < cap.size(); i++) {
             u[graph.arcFromId(i)] = cap[i];
         }
-        ns.upperMap(u);
+        network_simplex->upperMap(u);
     }
-    ns.stSupply(graph.nodeFromId(src), graph.nodeFromId(dst), d);
-    ns.run();
+    ListDigraph::NodeMap<int> demand(graph);
+    demand[graph.nodeFromId(src)] = d;
+    demand[graph.nodeFromId(dst)] = -d;
+    network_simplex->supplyMap(demand);
+    network_simplex->run();
     Flow map;
     ListDigraph::ArcMap<int> flow_map(graph);
-    ns.flowMap(flow_map);
+    network_simplex->flowMap(flow_map);
     for (int i = 0; i < graph.maxArcId(); i++) {
         if (flow_map[graph.arcFromId(i)] > 0) {
             map[i] = flow_map[graph.arcFromId(i)];
@@ -146,49 +207,6 @@ void FractionalPacking::set_buget(double b) {
     }
 }
 
-FlowSolution FractionalPacking::fractional_packing(double epsilon=0.05, bool restart) {
-    _m = edges.size() + 1;
-    _u = vector<double>(_m,0);
-    _f = vector<double>(_m,0);
-    change = vector<bool>(edges.size(), false);
-    bw_change = vector<double>(edges.size(),0);
-    _epsilon = edges.size() -1;
-    if(time_debug){
-
-        init_flow_time = 0;
-
-        min_cost_time=0;
-
-        new_ton_time=0;
-
-        potential_time=0;
-
-        update_flow_time=0;
-
-        iteration_time=0;
-    }
-    if(restart){
-        compute_init_flow();
-    }
-    while(_epsilon>=epsilon){
-        cout<<current_date_time()<< " epsilon: "<<_epsilon<<endl;
-        compute_potential_function();
-        while(_potential > 3 * _m) {
-            //while(_rou>1+_epsilon){
-            iteration();
-           _i = (_i+1)%demands.size();
-        //cout<<potential<<endl;
-        }
-        if(_epsilon == epsilon){
-            break;
-        }
-        _epsilon /= 2.0;
-        if(_epsilon<epsilon){
-            _epsilon = epsilon;
-        }
-    }
-    return solution;
-}
 
 void FractionalPacking::compute_init_flow() {
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
@@ -304,11 +322,12 @@ void FractionalPacking::iteration() {
                                                                                         /9.0/_alpha;
     }
     // let x = x_1 * x_2 ... * x_k, choose x_i in round-robin order, update x_i
-    Demand demand_i = demands[_i];
-    Flow flow_x_i = min_cost_flow(demand_i.src, demand_i.dst, demand_i.val,dual_cost, capacity_map);
+    int demand_index = draw_demand_index();
+    Demand demand_i = demands[demand_index];
+    Flow flow_x_i = min_cost_flow(demand_i.src, demand_i.dst, demand_i.val,dual_cost);
     int m=solution.flows.size();
-    Flow old_fxi = solution.rm_flow(_i, change, bw_change);
-    solution.add_flow(_i, flow_x_i, change, bw_change);
+    Flow old_fxi = solution.rm_flow(demand_index, change, bw_change);
+    solution.add_flow(demand_index, flow_x_i, change, bw_change);
     //double low = 1/pow(_alpha, 3);
     double low = 1/20.0/_alpha/_alpha/(_rou+_alpha);
     // if flow_x_i and old_fxi are the same, then no update
@@ -330,11 +349,12 @@ void FractionalPacking::iteration() {
     if(flow_change){
         double theta = compute_theta_newton_raphson(low, 0, 1.0);
         Flow target_fxi = update_flow(old_fxi, flow_x_i, theta);
-        solution.rm_flow(_i, change, bw_change);
-        solution.add_flow(_i, target_fxi, change, bw_change);
+        solution.rm_flow(demand_index, change, bw_change);
+        solution.add_flow(demand_index, target_fxi, change, bw_change);
         double old_potential = _potential;
         double new_potential = update_potential_function();
         if(new_potential<old_potential){
+            update_mab(demand_index, 1-new_potential/old_potential);
             update_count++;
             if (time_debug) {
                 high_resolution_clock::time_point t3 = high_resolution_clock::now();
@@ -343,8 +363,9 @@ void FractionalPacking::iteration() {
             }
             return;
         }else{
-            solution.rm_flow(_i, change, bw_change);
-            solution.add_flow(_i, old_fxi, change, bw_change);
+            update_mab(demand_index, 0);
+            solution.rm_flow(demand_index, change, bw_change);
+            solution.add_flow(demand_index, old_fxi, change, bw_change);
             update_potential_function();
             if (time_debug) {
                 high_resolution_clock::time_point t3 = high_resolution_clock::now();
@@ -352,10 +373,12 @@ void FractionalPacking::iteration() {
                 iteration_time+=time_span.count()/1000;
             }
         }
+    }else{
+        update_mab(demand_index, 0);
     }
 }
 
-Flow FractionalPacking::update_flow(Flow oldx, Flow newx, double theta) {
+Flow FractionalPacking::update_flow(const Flow &oldx, const Flow &newx, double theta) {
     Flow res;
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     if(theta<1) {
@@ -425,7 +448,7 @@ double FractionalPacking::compute_theta_newton_raphson(double theta0 = 0.5,
     }
 }
 
-double FractionalPacking::update_theta(double theta, vector<double> u_0, vector<double> u_1) {
+double FractionalPacking::update_theta(double theta, const vector<double> &u_0, const vector<double> &u_1) {
     /*
      * delta(\phi)/delta(\theta) = sum(\alpha * f(u_i)*a_i*(x1-x0))= sum(\alpha* f*(u_i_theta0)*(u_1 -u_0),
      * where x0 is previous solution and x1 is new solution and x = (1-theta)* x0 + theta*x1
@@ -455,3 +478,37 @@ double FractionalPacking::get_cost() {
     return c;
 }
 
+int FractionalPacking::draw_demand_index(){
+    if(_i<demands.size()) {
+        int res = _i;
+        _i = (++_i)%demands.size();
+        return res;
+    } else{
+        high_resolution_clock::time_point t2 = high_resolution_clock::now();
+        int res = 0;
+        for(int i=1;i<mab_index.size(); i++){
+            if(mab_index[i]>mab_index[res]){
+                res = i;
+            }
+        }
+        if (time_debug) {
+            high_resolution_clock::time_point t3 = high_resolution_clock::now();
+            duration<double, std::micro> time_span = t3 - t2;
+            draw_index_time+=time_span.count()/1000;
+        }
+        return res;
+    }
+}
+
+void FractionalPacking::update_mab(int index, double r) {
+    high_resolution_clock::time_point t2 = high_resolution_clock::now();
+    //mab_reward[index] = (mab_reward[index]*mab_times[index] + r)/(++mab_times[index]);
+    //mab_index[index] = mab_reward[index] + sqrt(3/mab_times[index]);
+    double theta = 0.8;
+    mab_index[index] = (1-theta)*mab_index[index] + theta*r;
+    if (time_debug) {
+        high_resolution_clock::time_point t3 = high_resolution_clock::now();
+        duration<double, std::micro> time_span = t3 - t2;
+        draw_index_time+=time_span.count()/1000;
+    }
+}
