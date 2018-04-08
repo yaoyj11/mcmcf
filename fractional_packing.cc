@@ -214,7 +214,9 @@ Flow FractionalPacking::min_cost_flow(int src, int dst, int d, ListDigraph::ArcM
     min_cost_count++;
     //TODO: Optimize min_cost_flow
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
-    network_simplex->costMap(*c);
+    if(c!=0) {
+        network_simplex->costMap(*c);
+    }
     ListDigraph::NodeMap<int> demand(graph);
     demand[graph.nodeFromId(src)] = d;
     demand[graph.nodeFromId(dst)] = -d;
@@ -277,10 +279,13 @@ string FractionalPacking::current_date_time() {
 double FractionalPacking::compute_potential_function() {
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     _alpha = 1/_epsilon*log(3*_m);
-    for(const auto&i : change_edges){
-        _u[i] = solution.used_bw[i] *inverse_capacity[i];
-        _u[_u.size() - 1] += bw_change[i] * beta[i];
-        bw_change[i] = 0;
+    if(!change_edges.empty()){
+        _u[_u.size()-1]=0;
+        for(int i=0; i<cost_map.size(); i++) {
+            _u[i] = solution.used_bw[i] * inverse_capacity[i];
+            _u[_u.size() - 1] += solution.used_bw[i] * beta[i];
+            bw_change[i] = 0;
+        }
     }
     change_edges.clear();
     /*
@@ -429,6 +434,72 @@ void FractionalPacking::iteration() {
         }
     }else{
         update_mab(demand_index, 0);
+    }
+}
+
+void FractionalPacking::iteration_all() {
+    /*
+     * at each iteraion, compute the new cost, then choose an x_i to optimize, then update x..
+        according to section 2.2 and section 3.1
+     */
+
+    //NOTE update_potential_function has to be called before iteration
+
+    high_resolution_clock::time_point t2 = high_resolution_clock::now();
+    //equition(6) delta phi x dot x
+
+    double tmp1 = _alpha * _f.back();
+    double tmp2 = delta_phi_x/9.0/_alpha;
+    for(int i = 0; i<cost_map.size(); i++){
+        //delta_x\PHI(x); m_th row of first term; second term
+        dual_cost->operator[](graph.arcFromId(i)) = int((_alpha* _f[i]*inverse_capacity[i] +
+                                                         tmp1 * beta[i] + tmp2 * beta[i])*10.0);
+    }
+    // let x = x_1 * x_2 ... * x_k, choose x_i in round-robin order, update x_i
+    FlowSolution new_solution(cost_map.size());
+    int demand_index = draw_demand_index();
+
+    for(int i=0;i<demands.size();i++){
+        Demand demand_i = demands[i];
+        if(i!=0) {
+            new_solution.add_flow(demand_index, min_cost_flow(demand_i.src, demand_i.dst, demand_i.val),
+                                  bw_change, change_edges);
+        }else{
+            new_solution.add_flow(demand_index, min_cost_flow(demand_i.src, demand_i.dst, demand_i.val, dual_cost),
+                                  bw_change, change_edges);
+        }
+    }
+    vector<double> ax=_u;
+    vector<double> ax_star(_u.size(),0);
+    double  ax_start_m = 0;
+    for(int i=0; i<cost_map.size(); i++){
+        ax_star[i] = new_solution.used_bw[i]*inverse_capacity[i];
+        ax_start_m += new_solution.used_bw[i]*beta[i];
+    }
+    ax_star[ax_star.size()-1] = ax_start_m;
+
+    double theta = compute_theta_newton_raphson(ax, ax_star,0.01, 0, 1.0);
+    double old_potential = _potential;
+
+    double new_potential = compute_potential_function();
+    if(new_potential<old_potential){
+        update_mab(demand_index, 1-new_potential/old_potential);
+        update_count++;
+        if (time_debug) {
+            high_resolution_clock::time_point t3 = high_resolution_clock::now();
+            duration<double, std::micro> time_span = t3 - t2;
+            iteration_time+=time_span.count()/1000;
+        }
+        return;
+    }else{
+        update_mab(demand_index, 0);
+        solution.rm_flow(demand_index, bw_change, change_edges);
+        compute_potential_function();
+        if (time_debug) {
+            high_resolution_clock::time_point t3 = high_resolution_clock::now();
+            duration<double, std::micro> time_span = t3 - t2;
+            iteration_time+=time_span.count()/1000;
+        }
     }
 }
 

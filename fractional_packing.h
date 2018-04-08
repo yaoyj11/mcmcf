@@ -100,7 +100,7 @@ public:
 
     Flow min_cost_flow(int src, int dst, int val, const vector<double> &cost, vector<int> cap = vector<int>());
 
-    Flow min_cost_flow(int src, int dst, int d, ListDigraph::ArcMap<int> *c);
+    Flow min_cost_flow(int src, int dst, int d, ListDigraph::ArcMap<int> *c=0);
 
     void set_buget(double b);
 
@@ -119,6 +119,8 @@ private:
     double update_potential_function();
 
     void iteration();
+
+    void iteration_all();
 
     Flow update_flow(const Flow &oldx, const Flow &newx, double theta);
 
