@@ -332,7 +332,6 @@ void FractionalPacking::iteration() {
     int demand_index = draw_demand_index();
     Demand demand_i = demands[demand_index];
     Flow flow_x_i = min_cost_flow(demand_i.src, demand_i.dst, demand_i.val,dual_cost);
-    int m=solution.flows.size();
     Flow old_fxi = solution.rm_flow(demand_index, change, bw_change, change_edges);
     solution.add_flow(demand_index, flow_x_i, change, bw_change, change_edges);
     // if flow_x_i and old_fxi are the same, then no update
