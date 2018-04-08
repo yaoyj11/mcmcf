@@ -42,8 +42,6 @@ public:
 
     vector<double>_f;
 
-    double delta_phi_x;
-
     vector<double>bw_change;
 
     vector<int> change_edges;
@@ -88,8 +86,6 @@ public:
 
     NetworkSimplex<ListDigraph> *network_simplex;
 
-    ListDigraph::ArcMap<int> *dual_cost;
-
     FlowSolution solution;
 
     FractionalPacking();
@@ -101,8 +97,6 @@ public:
     void read_mcf(string filename);
 
     Flow min_cost_flow(int src, int dst, int val, const vector<double> &cost, vector<int> cap = vector<int>());
-
-    Flow min_cost_flow(int src, int dst, int d, ListDigraph::ArcMap<int> &c);
 
     void set_buget(double b);
 
