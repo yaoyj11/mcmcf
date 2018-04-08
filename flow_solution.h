@@ -32,7 +32,7 @@ public:
 
     double flow_on_edge(int arc);
 
-    void update(const FlowSolution &sol, double theta);
+    void update(FlowSolution &sol, double theta);
 
     void set_arc_num(int num);
 

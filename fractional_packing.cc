@@ -158,7 +158,11 @@ FlowSolution FractionalPacking::fractional_packing(double epsilon=0.05, bool res
         compute_potential_function();
         while(_potential > 3 * _m) {
             //while(_rou>1+_epsilon){
-            iteration();
+            if(rand()%100!=0){
+                iteration();
+            }else {
+                iteration_all();
+            }
         //cout<<potential<<endl;
         }
         if(_epsilon == epsilon){
@@ -289,12 +293,10 @@ double FractionalPacking::compute_potential_function(bool recompute_u) {
         }
     }
     change_edges.clear();
-    /*
     _rou=0;
     for(int i=0;i<_u.size(); i++){
         _rou = _rou>_u[i]?_rou:_u[i];
     }
-     */
     _potential = 0;
     delta_phi_x=0;
     for(int i = 0; i<_u.size(); i++){
@@ -317,11 +319,10 @@ double FractionalPacking::update_potential_function() {
         _u[_u.size() - 1] += bw_change[i] * beta[i];
         bw_change[i]=0;
     }
-    /*
     _rou=0;
-    for(int i=0;i<_u.size(); i++){
-        _rou = _rou>_u[i]?_rou:_u[i];
-    }*/
+    for(int i=0;i<_u.size(); i++) {
+        _rou = _rou > _u[i] ? _rou : _u[i];
+    }
     _potential -= _f.back();
     delta_phi_x -= _alpha*_f.back()*_u.back();
     for(const auto&i:change_edges){
@@ -479,9 +480,9 @@ void FractionalPacking::iteration_all() {
     }
     ax_star[ax_star.size()-1] = ax_start_m;
 
-    double theta = compute_theta_newton_raphson(ax, ax_star,0.01, 0, 1.0);
     double old_potential = _potential;
     FlowSolution old_solution = solution;
+    double theta = 1/20.0/_alpha/_alpha/(_rou+_alpha);
     solution.update(new_solution, theta);
     double new_potential = compute_potential_function(true);
     if(new_potential<old_potential){
@@ -489,6 +490,7 @@ void FractionalPacking::iteration_all() {
             high_resolution_clock::time_point t3 = high_resolution_clock::now();
             duration<double, std::micro> time_span = t3 - t2;
             iteration_time+=time_span.count()/1000;
+            cout<<time_span.count()/1000<<endl;
         }
         return;
     }else{
@@ -498,6 +500,7 @@ void FractionalPacking::iteration_all() {
             high_resolution_clock::time_point t3 = high_resolution_clock::now();
             duration<double, std::micro> time_span = t3 - t2;
             iteration_time+=time_span.count()/1000;
+            cout<<time_span.count()/1000<<endl;
         }
     }
 }
