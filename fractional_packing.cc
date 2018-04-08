@@ -433,7 +433,7 @@ double FractionalPacking::compute_theta_newton_raphson(double theta0 = 0.5,
     double theta = theta0;
     double new_theta = update_theta(theta, ax, ax_star);
     try{
-        while(new_theta<2&&new_theta>-1 &&abs(new_theta - theta)>1e-3){
+        while(new_theta<2&&new_theta>-1 &&abs(new_theta - theta)>1e-2){
             theta = new_theta;
             new_theta = update_theta(theta, ax, ax_star);
         }

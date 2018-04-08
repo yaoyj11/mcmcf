@@ -22,6 +22,8 @@ int main() {
 
     filenumber="478237";
     cost = 84121;
+    //lptime: 64.95
+    //python time: 739
     FractionalPacking fp("/home/yaoyj11/project/mcmcf/data/test-mcf"+filenumber+".net");
     fp.set_buget(cost);
     high_resolution_clock::time_point t1 = high_resolution_clock::now();
