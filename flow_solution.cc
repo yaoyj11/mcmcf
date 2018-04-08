@@ -8,7 +8,7 @@ FlowSolution::FlowSolution(int arc_num):used_bw(arc_num, 0.0),flows() {
 
 bool FlowSolution::empty() {return flows.empty();}
 
-void FlowSolution::add_flow(int x, Flow flow, vector<bool> &change, vector<double>&bw_change,
+void FlowSolution::add_flow(int x, Flow flow, vector<double>&bw_change,
                             set<int>&change_edges) {
     /* Fcunton to add a flow for a commodity
      * @Params:
@@ -17,19 +17,17 @@ void FlowSolution::add_flow(int x, Flow flow, vector<bool> &change, vector<doubl
      */
     flows[x] = flow;
     for(const auto& kv :flow){
-        change[kv.first]=true;
         change_edges.insert(kv.first);
         bw_change[kv.first] += kv.second;
         used_bw[kv.first] += kv.second;
     }
 }
 
-Flow FlowSolution::rm_flow(int d, vector<bool> &change, vector<double>&bw_change,set<int> &change_edges) {
+Flow FlowSolution::rm_flow(int d, vector<double>&bw_change,set<int> &change_edges) {
     if(flows.count(d) ==1){
         Flow flow = flows[d];
         flows.erase(d);
         for(const auto& kv: flow){
-            change[kv.first]=true;
             change_edges.insert(kv.first);
             bw_change[kv.first] -= kv.second;
             used_bw[kv.first] -= kv.second;

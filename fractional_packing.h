@@ -48,8 +48,6 @@ public:
 
     set<int> change_edges;
 
-    vector<bool> change;
-
     double _epsilon;
 
     double _alpha;
@@ -77,6 +75,8 @@ public:
     vector<Demand> demands;
 
     vector<int> capacity_map;
+
+    vector<double> inverse_capacity;
 
     vector<double> cost_map;
 
