@@ -219,7 +219,7 @@ void FractionalPacking::compute_init_flow() {
         if(f.empty()){
             throw std::runtime_error("No feasible solution for single commodity");
         }
-        solution.add_flow(i, f, change, bw_change);
+        solution.add_flow(i, f, change, bw_change, change_edges);
     }
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
@@ -242,7 +242,8 @@ string FractionalPacking::current_date_time() {
 double FractionalPacking::compute_potential_function() {
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     _alpha = 1/_epsilon*log(3*_m);
-    for(int i = 0; i< edges.size(); i++){
+    cout<<"enter c"<<endl;
+    for(const auto&i : change_edges){
         if(change[i]) {
             _u[i] = solution.used_bw[i] / capacity_map[i];
             _u[_u.size() - 1] += bw_change[i] * beta[i];
@@ -250,6 +251,7 @@ double FractionalPacking::compute_potential_function() {
             bw_change[i] = 0;
         }
     }
+    change_edges.clear();
     /*
     _rou=0;
     for(int i=0;i<_u.size(); i++){
@@ -265,17 +267,19 @@ double FractionalPacking::compute_potential_function() {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
         duration<double, std::micro> time_span = t3 - t2;
         potential_time+=time_span.count()/1000;
+        cout<<"out c"<<endl;
     }
     return _potential;
 }
 
 double FractionalPacking::update_potential_function() {
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
-    _alpha = 1/_epsilon*log(3*_m);
-    for(int i = 0; i< edges.size(); i++){
+    cout<<"enter p"<<endl;
+    for(const auto&i:change_edges){
         if(change[i]) {
             _u[i] = solution.used_bw[i] / capacity_map[i];
             _u[_u.size() - 1] += bw_change[i] * beta[i];
+            bw_change[i]=0;
         }
     }
     /*
@@ -283,21 +287,23 @@ double FractionalPacking::update_potential_function() {
     for(int i=0;i<_u.size(); i++){
         _rou = _rou>_u[i]?_rou:_u[i];
     }*/
-    _potential = 0;
-    for(int i = 0; i<change.size(); i++){
+    _potential -= _f.back();
+    for(const auto&i:change_edges){
         if(change[i]) {
+            _potential -=_f[i];
             _f[i] = exp(_alpha * (_u[i] - 1.0));
+            _potential += _f[i];
             change[i]=false;
-            bw_change[i]=0;
         }
-        _potential += _f[i];
     }
     _f[_f.size()-1]=exp(_alpha*(_u.back() - 1.0));
     _potential += _f.back();
+    change_edges.clear();
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
         duration<double, std::micro> time_span = t3 - t2;
         potential_time+=time_span.count()/1000;
+        cout<<"out p"<<endl;
     }
     return _potential;
 }
@@ -331,8 +337,8 @@ void FractionalPacking::iteration() {
     Demand demand_i = demands[demand_index];
     Flow flow_x_i = min_cost_flow(demand_i.src, demand_i.dst, demand_i.val,dual_cost);
     int m=solution.flows.size();
-    Flow old_fxi = solution.rm_flow(demand_index, change, bw_change);
-    solution.add_flow(demand_index, flow_x_i, change, bw_change);
+    Flow old_fxi = solution.rm_flow(demand_index, change, bw_change, change_edges);
+    solution.add_flow(demand_index, flow_x_i, change, bw_change, change_edges);
     // if flow_x_i and old_fxi are the same, then no update
     //TODO: if no update, there is no need to compute potential_function again
     bool flow_change = false;
@@ -354,8 +360,8 @@ void FractionalPacking::iteration() {
         //double low = 1/20.0/_alpha/_alpha/(_rou+_alpha);
         double theta = compute_theta_newton_raphson(0.01, 0, 1.0);
         Flow target_fxi = update_flow(old_fxi, flow_x_i, theta);
-        solution.rm_flow(demand_index, change, bw_change);
-        solution.add_flow(demand_index, target_fxi, change, bw_change);
+        solution.rm_flow(demand_index, change, bw_change, change_edges);
+        solution.add_flow(demand_index, target_fxi, change, bw_change, change_edges);
         double old_potential = _potential;
         double new_potential = update_potential_function();
         if(new_potential<old_potential){
@@ -369,8 +375,8 @@ void FractionalPacking::iteration() {
             return;
         }else{
             update_mab(demand_index, 0);
-            solution.rm_flow(demand_index, change, bw_change);
-            solution.add_flow(demand_index, old_fxi, change, bw_change);
+            solution.rm_flow(demand_index, change, bw_change, change_edges);
+            solution.add_flow(demand_index, old_fxi, change, bw_change, change_edges);
             update_potential_function();
             if (time_debug) {
                 high_resolution_clock::time_point t3 = high_resolution_clock::now();

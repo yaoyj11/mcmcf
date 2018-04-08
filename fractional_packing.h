@@ -44,6 +44,8 @@ public:
 
     vector<double>bw_change;
 
+    vector<int> change_edges;
+
     vector<bool> change;
 
     double _epsilon;
