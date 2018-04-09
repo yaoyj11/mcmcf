@@ -104,13 +104,17 @@ public:
 
     Flow min_cost_flow(int src, int dst, int d, ListDigraph::ArcMap<int> *c=0);
 
-    void set_buget(double b);
+    int min_cost_flow_cost(int src, int dst, int d);
 
-    FlowSolution fractional_packing(double epsilon, bool restart= true);
+    bool fractional_packing(double b, double epsilon, bool restart= true);
+
+    double min_cost(double epsilon);
 
     double get_cost();
 
 private:
+
+    void set_buget(double b);
 
     void compute_init_flow();
 
@@ -122,7 +126,7 @@ private:
 
     void iteration();
 
-    void iteration_all();
+    double iteration_all();
 
     Flow update_flow(const Flow &oldx, const Flow &newx, double theta);
 
