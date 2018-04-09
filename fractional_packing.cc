@@ -186,18 +186,9 @@ bool FractionalPacking::fractional_packing(double b, double epsilon, bool restar
     compute_potential_function(true);
     while(_epsilon>=epsilon){
         //cout<<current_date_time()<< " epsilon: "<<_epsilon<<endl;
-        compute_potential_function();
         while(_potential > 3 * _m) {
             //while(_rou>1+_epsilon){
-            if(rand()%500!=0){
-                iteration();
-            }else {
-                double ratio = iteration_all();
-                if(ratio>1.0){
-                    cout<<"No exact solution"<<endl;
-                    return false;
-                }
-            }
+            iteration();
         //cout<<potential<<endl;
         }
         if(_epsilon == epsilon){
@@ -207,6 +198,7 @@ bool FractionalPacking::fractional_packing(double b, double epsilon, bool restar
         if(_epsilon<epsilon){
             _epsilon = epsilon;
         }
+        compute_potential_function();
     }
     return true;
 }
@@ -421,11 +413,11 @@ void FractionalPacking::iteration() {
     // let x = x_1 * x_2 ... * x_k, choose x_i in round-robin order, update x_i
     int demand_index = draw_demand_index();
     Demand demand_i = demands[demand_index];
+    //TODO: according to the paper, "fast approximation algorithms for multicommodity problem. The capacity constraint should be \lambda * u, since Ax<lambda* u, constraint u cannot ensure the second inequality."
     Flow flow_x_i = min_cost_flow(demand_i.src, demand_i.dst, demand_i.val,dual_cost);
     Flow old_fxi = solution.rm_flow(demand_index, bw_change, change_edges);
     solution.add_flow(demand_index, flow_x_i, bw_change, change_edges);
     // if flow_x_i and old_fxi are the same, then no update
-    //TODO: if no update, there is no need to compute potential_function again
     bool flow_change = false;
     if(flow_x_i.size()!= old_fxi.size()){
         flow_change = true;
@@ -498,7 +490,8 @@ double FractionalPacking::iteration_all() {
     //equition(6) delta phi x dot x
     double cost;
     for(int i=0;i<demands.size();i++){
-        cost += min_cost_flow_cost(demands[i].src, demands[i].dst, demands[i].val)/10.0;
+        double c = min_cost_flow_cost(demands[i].src, demands[i].dst, demands[i].val)/10.0;
+        cost+=c;
     }
     /*compute sum_y;
      * y_i(i=1->m) =alpha*f(u_i)
@@ -514,7 +507,6 @@ double FractionalPacking::iteration_all() {
         iteration_all_time +=time_span.count()/1000;
     }
     double ratio = cost/sum_y;
-    cout<<ratio<<endl;
     return ratio;
 }
 
