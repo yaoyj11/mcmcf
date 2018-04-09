@@ -16,7 +16,7 @@ int main() {
     //cin>>filenumber>>cost;
     filenumber="796829";
     //cost = 78134;
-    cost = 78130;
+    cost = 78135;
     //lptime: 72s
     //python time 696
     //mcmcf time 13s

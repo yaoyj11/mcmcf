@@ -1,5 +1,5 @@
 CC=g++
-FLAGS=-pg -std=c++11 -fpermissive
+FLAGS=-g -std=c++11 -fpermissive
 LIB = -lemon
 
 all: mcmcf

@@ -129,7 +129,6 @@ double FractionalPacking::min_cost(double epsilon) {
     network_simplex = new NetworkSimplex<ListDigraph>(graph);
     dual_cost = new ListDigraph::ArcMap<int>(graph);
     compute_init_flow();
-    compute_potential_function(true);
     double min = get_cost();
     double max = -1;
     //first determine a upper bound
@@ -139,9 +138,9 @@ double FractionalPacking::min_cost(double epsilon) {
     }
     max = 2*min*(1+epsilon);
     while(max/min>(1+epsilon)){
-        double trial=sqrt(max/min)*min;
+        double trial=(max+min)/2;
         if(fractional_packing(trial, epsilon, false)){
-            max = trial*(1+epsilon);
+            max = trial;
         }else{
             min = trial;
         }
@@ -151,6 +150,14 @@ double FractionalPacking::min_cost(double epsilon) {
 }
 
 bool FractionalPacking::fractional_packing(double b, double epsilon, bool restart) {
+    set_buget(b);
+    _m = cost_map.size() + 1;
+    _u = vector<double>(_m,0);
+    _f = vector<double>(_m,0);
+    bw_change = vector<double>(cost_map.size(),0);
+    _epsilon = cost_map.size() -1;
+    network_simplex = new NetworkSimplex<ListDigraph>(graph);
+    dual_cost = new ListDigraph::ArcMap<int>(graph);
     mab_reward = vector<double>(demands.size(),0);
     mab_index = vector<double>(demands.size(), 0);
     mab_times = vector<int>(demands.size(), 0);
@@ -173,27 +180,21 @@ bool FractionalPacking::fractional_packing(double b, double epsilon, bool restar
         draw_index_time = 0;
     }
 
-    set_buget(b);
     if(restart){
-        _m = cost_map.size() + 1;
-        _u = vector<double>(_m,0);
-        _f = vector<double>(_m,0);
-        bw_change = vector<double>(cost_map.size(),0);
-        _epsilon = cost_map.size() -1;
-        network_simplex = new NetworkSimplex<ListDigraph>(graph);
-        dual_cost = new ListDigraph::ArcMap<int>(graph);
         compute_init_flow();
-        compute_potential_function(true);
     }
+    compute_potential_function(true);
     while(_epsilon>=epsilon){
-        cout<<current_date_time()<< " epsilon: "<<_epsilon<<endl;
+        //cout<<current_date_time()<< " epsilon: "<<_epsilon<<endl;
         compute_potential_function();
         while(_potential > 3 * _m) {
             //while(_rou>1+_epsilon){
             if(rand()%500!=0){
                 iteration();
             }else {
-                if(iteration_all()>1.0){
+                double ratio = iteration_all();
+                if(ratio>1.0){
+                    cout<<"No exact solution"<<endl;
                     return false;
                 }
             }
@@ -512,7 +513,9 @@ double FractionalPacking::iteration_all() {
         duration<double, std::micro> time_span = t3 - t2;
         iteration_all_time +=time_span.count()/1000;
     }
-    return cost/sum_y;
+    double ratio = cost/sum_y;
+    cout<<ratio<<endl;
+    return ratio;
 }
 
 Flow FractionalPacking::update_flow(const Flow &oldx, const Flow &newx, double theta) {
