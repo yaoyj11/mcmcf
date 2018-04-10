@@ -14,22 +14,23 @@ int main() {
     string filenumber;
     int cost;
     //cin>>filenumber>>cost;
-    filenumber="796829";
+    //filenumber="796829";
     //cost = 78134;
-    cost = 74500;
+    cost = 74600;
     //lptime: 72s
     //python time 696
     //mcmcf time 13s
 
-    //filenumber="478237";
+    filenumber="478237";
     //cost = 84121;
     //lptime: 64.95
     //python time: 739
     FractionalPacking fp("/home/yaoyj11/project/mcmcf/data/test-mcf"+filenumber+".net");
     high_resolution_clock::time_point t1 = high_resolution_clock::now();
     fp.time_debug=true;
-    //fp.min_cost(0.05);
-    fp.fractional_packing(cost, 0.05);
+    bool suc = true;
+    fp.min_cost(0.05);
+    //bool suc=fp.fractional_packing(cost, 0.05);
     if(fp.time_debug){
 
         cout<<"init flow time: "<<fp.init_flow_time<<endl;
@@ -43,6 +44,8 @@ int main() {
         cout<<"iteration_time: "<<fp.iteration_time<<endl;
         cout<<"iteration_all_time: "<<fp.iteration_all_time<<endl;
         cout<<"draw index time: "<<fp.draw_index_time<<endl;
+
+        cout<<"succcess? "<<suc<<endl;
     }
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     duration<double, std::micro> time_span = t2 - t1;

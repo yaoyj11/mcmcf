@@ -137,21 +137,32 @@ double FractionalPacking::min_cost(double epsilon) {
     network_simplex = new NetworkSimplex<ListDigraph>(graph);
     dual_cost = new ListDigraph::ArcMap<int>(graph);
     relax_cap = new ListDigraph::ArcMap<int>(graph);
+    mab_reward = vector<double>(demands.size(), 0);
+    mab_index = vector<double>(demands.size(), 0);
+    mab_times = vector<int>(demands.size(), 0);
+    mab_average = 0;
+    mab_flag = true;
     compute_init_flow();
     double min = get_cost();
     double max = -1;
     //first determine a upper bound
+    cout<<"try "<<2*min<<endl;
     while (!fractional_packing(2 * min, epsilon, false)) {
-        min = 2 * min;
+        min = 2 * min*(1+epsilon);
+        cout<<"try "<<2*min<<endl;
         cout << "min: " << min << "max: " << max << endl;
     }
-    max = 2 * min * (1 + epsilon);
+    max = 2 * min * (1 -epsilon*epsilon);
+    cout << "min: " << min << "max: " << max << endl;
     while (max / min > (1 + epsilon)) {
         double trial = (max + min) / 2;
+        cout<<"try "<<trial<<endl;
         if (fractional_packing(trial, epsilon, false)) {
-            max = trial;
+            max = trial*(1-epsilon*epsilon);
+            cout<<"suc"<<endl;
         } else {
-            min = trial;
+            min = trial*(1+epsilon);
+            cout<<"fail"<<endl;
         }
         cout << "min: " << min << "max: " << max << endl;
     }
@@ -160,20 +171,7 @@ double FractionalPacking::min_cost(double epsilon) {
 
 bool FractionalPacking::fractional_packing(double b, double epsilon, bool restart) {
     set_buget(b);
-    _m = cost_map.size() + 1;
-    _u = vector<double>(_m, 0);
-    _y = vector<double>(_m, 0);
-    _f = vector<double>(_m, 0);
-    bw_change = vector<double>(cost_map.size(), 0);
-    _epsilon = cost_map.size() - 1;
-    network_simplex = new NetworkSimplex<ListDigraph>(graph);
-    dual_cost = new ListDigraph::ArcMap<int>(graph);
-    relax_cap = new ListDigraph::ArcMap<int>(graph);
-    mab_reward = vector<double>(demands.size(), 0);
-    mab_index = vector<double>(demands.size(), 0);
-    mab_times = vector<int>(demands.size(), 0);
-    mab_average = 0;
-    mab_flag = true;
+    _epsilon = cost_map.size()-1;
     if (time_debug) {
 
         init_flow_time = 0;
@@ -192,18 +190,37 @@ bool FractionalPacking::fractional_packing(double b, double epsilon, bool restar
     }
 
     if (restart) {
+        _m = cost_map.size() + 1;
+        _u = vector<double>(_m, 0);
+        _y = vector<double>(_m, 0);
+        _f = vector<double>(_m, 0);
+        bw_change = vector<double>(cost_map.size(), 0);
+        _epsilon = cost_map.size() - 1;
+        network_simplex = new NetworkSimplex<ListDigraph>(graph);
+        dual_cost = new ListDigraph::ArcMap<int>(graph);
+        relax_cap = new ListDigraph::ArcMap<int>(graph);
+        mab_reward = vector<double>(demands.size(), 0);
+        mab_index = vector<double>(demands.size(), 0);
+        mab_times = vector<int>(demands.size(), 0);
+        mab_average = 0;
+        mab_flag = true;
         compute_init_flow();
     }
     compute_potential_function(true);
-    while (_epsilon >= epsilon) {
+    while (_epsilon - epsilon> 1e-6) {
         cout << current_date_time() << " epsilon: " << _epsilon << endl;
         while (_potential > 3 * _m && _rou> epsilon + 1) {
             //while(_rou>1+_epsilon){
+            if(rand()%100!=0) {
                 iteration();
-                iteration_all();
+            }else {
+                if(!iteration_all()){
+                    return false;
+                }
+            }
             //cout<<potential<<endl;
         }
-        if (_epsilon == epsilon) {
+        if (abs(_epsilon - epsilon)<1e-6) {
             break;
         }
         _epsilon /= 2.0;
@@ -504,15 +521,19 @@ void FractionalPacking::iteration() {
                                                          tmp1 * beta[i] + tmp2 * beta[i]));
     }
      */
+    double maxcost=0;
     for (int i = 0; i < cost_map.size(); i++) {
         //delta_x\PHI(x); m_th row of first term; second term
+        double c = _y[i]*inverse_capacity[i] + _y.back()*beta[i];
+        maxcost=c>maxcost?c:maxcost;
         dual_cost->operator[](graph.arcFromId(i)) = int(_y[i]*inverse_capacity[i] + _y.back()*beta[i]);
+        relax_cap->operator[](graph.arcFromId(i)) = int(_rou * capacity_map[i]) + 1;
     }
     // let x = x_1 * x_2 ... * x_k, choose x_i in round-robin order, update x_i
     int demand_index = draw_demand_index();
     Demand demand_i = demands[demand_index];
     //TODO: according to the paper, "fast approximation algorithms for multicommodity problem. The capacity constraint should be \lambda * u, since Ax<lambda* u, constraint u cannot ensure the second inequality."
-    Flow flow_x_i = min_cost_flow(demand_i.src, demand_i.dst, demand_i.val, dual_cost);
+    Flow flow_x_i = min_cost_flow(demand_i.src, demand_i.dst, demand_i.val, dual_cost, relax_cap);
     Flow old_fxi = solution.rm_flow(demand_index, bw_change, change_edges);
     solution.add_flow(demand_index, flow_x_i, bw_change, change_edges);
     // if flow_x_i and old_fxi are the same, then no update
@@ -576,7 +597,7 @@ void FractionalPacking::iteration() {
     }
 }
 
-double FractionalPacking::iteration_all() {
+bool FractionalPacking::iteration_all() {
     /*
      * at each iteraion, compute the new cost, then choose an x_i to optimize, then update x..
         according to section 2.2 and section 3.1
@@ -622,10 +643,11 @@ double FractionalPacking::iteration_all() {
              << " solution cost: " << solution_dual_cost
              << " rou: " << _rou << endl;
         cout << cost / sum_y << endl;
+        return false;
     }
     assert(sum_y*_rou >= solution_dual_cost);
     assert(solution_dual_cost >=cost);
-    return cost / sum_y;
+    return true;
 }
 
 Flow FractionalPacking::update_flow(const Flow &oldx, const Flow &newx, double theta) {
