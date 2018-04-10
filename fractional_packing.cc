@@ -413,7 +413,7 @@ double FractionalPacking::compute_potential_function(bool recompute_u) {
     for (int i = 0; i < _u.size(); i++) {
         _f[i] = exp(_alpha * (_u[i] - 1.0));
         _potential += _f[i];
-        delta_phi_x += _alpha*_f[i] * _u[i];
+        delta_phi_x += _f[i] * _u[i];
         _y[i] = _alpha * _f[i];
     }
 
@@ -440,7 +440,7 @@ double FractionalPacking::update_potential_function() {
     delta_phi_x -= _f.back() * _u.back();
     for (const auto &i:change_edges) {
         _potential -= _f[i];
-        delta_phi_x -= _alpha * _f[i] * _u[i];
+        delta_phi_x -=  _f[i] * _u[i];
         _f[i] = exp(_alpha * (_u[i] - 1.0));
         _potential += _f[i];
         delta_phi_x += _f[i] * _u[i];
@@ -448,7 +448,7 @@ double FractionalPacking::update_potential_function() {
     }
     _f[_f.size() - 1] = exp(_alpha * (_u.back() - 1.0));
     _potential += _f.back();
-    delta_phi_x += _alpha * _f.back() * _u.back();
+    delta_phi_x +=  _f.back() * _u.back();
     change_edges.clear();
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
@@ -479,7 +479,7 @@ void FractionalPacking::iteration() {
     //equition(6) delta phi x dot x
 
     double tmp1 = _alpha * _f.back();
-    double tmp2 = delta_phi_x / 9.0 / _alpha;
+    double tmp2 = delta_phi_x / 9.0;
     for (int i = 0; i < cost_map.size(); i++) {
         //delta_x\PHI(x); m_th row of first term; second term
         dual_cost->operator[](graph.arcFromId(i)) = int((_alpha * _f[i] * inverse_capacity[i] +
@@ -566,7 +566,7 @@ double FractionalPacking::iteration_all() {
     double cost = 0;
     double solution_dual_cost = 0;
     double tmp1 = _alpha * _f.back();
-    double tmp2 = delta_phi_x / 9.0 / _alpha;
+    double tmp2 = delta_phi_x / 9.0;
     for (int i = 0; i < cost_map.size(); i++) {
         //delta_x\PHI(x); m_th row of first term; second term
         double c = int((_alpha * _f[i] * inverse_capacity[i] + tmp1 * beta[i] + tmp2 * beta[i]));
@@ -587,7 +587,7 @@ double FractionalPacking::iteration_all() {
     for (int i = 0; i < _u.size(); i++) {
         sum_y += _alpha * _f[i];
     }
-    sum_y += delta_phi_x/9/_alpha;
+    sum_y += delta_phi_x/9;
 
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
