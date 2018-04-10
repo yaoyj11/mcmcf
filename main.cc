@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
         cost=atoi(argv[2]);
         suc=fp.fractional_packing(cost, 0.05);
     }else{
-       cost =fp.min_cost(0.05);
+       cost =fp.min_cost(0.08);
     }
     //cost=68597.74
     if(fp.time_debug){

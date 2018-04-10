@@ -87,6 +87,10 @@ public:
 
     vector<double> beta;
 
+    vector<bool> improve;
+
+    bool improve_flag;
+
     ListDigraph graph;
 
     NetworkSimplex<ListDigraph> *network_simplex;
@@ -109,11 +113,13 @@ public:
 
     Flow min_cost_flow(int src, int dst, int d, ListDigraph::ArcMap<int> *c=0);
 
-    Flow min_cost_flow(int src, int dst, int d, ListDigraph::ArcMap<int> *c, ListDigraph::ArcMap<int> * cap);
+    Flow min_cost_flow(int src, int dst, int d, int scale, ListDigraph::ArcMap<int> *c, ListDigraph::ArcMap<int> *
+            cap);
 
     int min_cost_flow_cost(int src, int dst, int d);
 
-    int min_cost_flow_cost(int src, int dst, int d, ListDigraph::ArcMap<int> *c, ListDigraph::ArcMap<int> * cap);
+    double min_cost_flow_cost(int src, int dst, int d, int scale, ListDigraph::ArcMap<int> *c,
+                           ListDigraph::ArcMap<int> * cap);
 
     bool fractional_packing(double b, double epsilon, bool restart= true);
 
