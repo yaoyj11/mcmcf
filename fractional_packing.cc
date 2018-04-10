@@ -163,7 +163,7 @@ double FractionalPacking::min_cost(double epsilon) {
             cout<<"suc"<<endl;
             res = solution;
         } else {
-            min = trial*(1+epsilon);
+            min = trial;
             cout<<"fail"<<endl;
         }
         cout << "min: " << min << "max: " << max << endl;
@@ -213,18 +213,25 @@ bool FractionalPacking::fractional_packing(double b, double epsilon, bool restar
     compute_potential_function(true);
     while (_epsilon - epsilon> -1e-6) {
         cout << current_date_time() << " epsilon: " << _epsilon << endl;
-        while (_potential > 3 * _m) {
+        while (_potential > 3 * _m&&_rou>(1+epsilon)) {
             //while(_rou>1+_epsilon){
-            if(rand()%100!=0) {
+            if(rand()%demands.size()!=0) {
                 iteration();
             }else {
                 if(!iteration_all()){
                     return false;
                 }
+                else{
+                    if(rand()%100==0){
+                        cout<<_rou<<endl;
+                    }
+                }
             }
             //cout<<potential<<endl;
         }
         if (abs(_epsilon - epsilon)<1e-6) {
+            compute_potential_function(true);
+            cout<<"succeed: _rou "<<_rou<< " cost"<<get_cost()<<endl;
             break;
         }
         _epsilon /= 2.0;
