@@ -23,14 +23,15 @@ int main() {
 
     filenumber="478237";
     //cost = 84121;
+    cost = 78132;
     //lptime: 64.95
     //python time: 739
     FractionalPacking fp("/home/yaoyj11/project/mcmcf/data/test-mcf"+filenumber+".net");
     high_resolution_clock::time_point t1 = high_resolution_clock::now();
     fp.time_debug=true;
     bool suc = true;
-    fp.min_cost(0.05);
-    //bool suc=fp.fractional_packing(cost, 0.05);
+    //fp.min_cost(0.05);
+    suc=fp.fractional_packing(cost, 0.05);
     if(fp.time_debug){
 
         cout<<"init flow time: "<<fp.init_flow_time<<endl;

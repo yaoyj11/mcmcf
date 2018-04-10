@@ -207,9 +207,9 @@ bool FractionalPacking::fractional_packing(double b, double epsilon, bool restar
         compute_init_flow();
     }
     compute_potential_function(true);
-    while (_epsilon - epsilon> 1e-6) {
+    while (_epsilon - epsilon> -1e-6) {
         cout << current_date_time() << " epsilon: " << _epsilon << endl;
-        while (_potential > 3 * _m && _rou> epsilon + 1) {
+        while (_potential > 3 * _m) {
             //while(_rou>1+_epsilon){
             if(rand()%100!=0) {
                 iteration();
@@ -527,7 +527,7 @@ void FractionalPacking::iteration() {
         double c = _y[i]*inverse_capacity[i] + _y.back()*beta[i];
         maxcost=c>maxcost?c:maxcost;
         dual_cost->operator[](graph.arcFromId(i)) = int(_y[i]*inverse_capacity[i] + _y.back()*beta[i]);
-        relax_cap->operator[](graph.arcFromId(i)) = int(_rou * capacity_map[i]) + 1;
+        relax_cap->operator[](graph.arcFromId(i)) = int(_rou * capacity_map[i]);
     }
     // let x = x_1 * x_2 ... * x_k, choose x_i in round-robin order, update x_i
     int demand_index = draw_demand_index();
@@ -618,7 +618,7 @@ bool FractionalPacking::iteration_all() {
         solution_dual_cost += solution.used_bw[i] * c;
 
         //+1 to make sure that relaxed capacity >=lamda* u
-        relax_cap->operator[](graph.arcFromId(i)) = int(_rou * capacity_map[i]) + 1;
+        relax_cap->operator[](graph.arcFromId(i)) = int(_rou * capacity_map[i]);
     }
     for (int i = 0; i < demands.size(); i++) {
         cost += min_cost_flow_cost(demands[i].src, demands[i].dst, demands[i].val, dual_cost, relax_cap);
