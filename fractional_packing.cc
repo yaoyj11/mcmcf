@@ -152,21 +152,25 @@ double FractionalPacking::min_cost(double epsilon) {
         cout<<"try "<<2*min<<endl;
         cout << "min: " << min << "max: " << max << endl;
     }
+    FlowSolution res = solution;
     max = 2 * min * (1 -epsilon*epsilon);
     cout << "min: " << min << "max: " << max << endl;
-    while (max / min > (1 + epsilon)) {
+    while (max >min) {
         double trial = (max + min) / 2;
         cout<<"try "<<trial<<endl;
         if (fractional_packing(trial, epsilon, false)) {
             max = trial*(1-epsilon*epsilon);
             cout<<"suc"<<endl;
+            res = solution;
         } else {
             min = trial*(1+epsilon);
             cout<<"fail"<<endl;
         }
         cout << "min: " << min << "max: " << max << endl;
     }
-    return min;
+    solution = res;
+
+    return get_cost();
 }
 
 bool FractionalPacking::fractional_packing(double b, double epsilon, bool restart) {
@@ -618,7 +622,7 @@ bool FractionalPacking::iteration_all() {
         solution_dual_cost += solution.used_bw[i] * c;
 
         //+1 to make sure that relaxed capacity >=lamda* u
-        relax_cap->operator[](graph.arcFromId(i)) = int(_rou * capacity_map[i]);
+        relax_cap->operator[](graph.arcFromId(i)) = int(_rou * capacity_map[i])+1;
     }
     for (int i = 0; i < demands.size(); i++) {
         cost += min_cost_flow_cost(demands[i].src, demands[i].dst, demands[i].val, dual_cost, relax_cap);

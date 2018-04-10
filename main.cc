@@ -8,7 +8,7 @@
 using namespace std;
 using namespace std::chrono;
 
-int main() {
+int main(int argc, char* argv[]) {
     srand(41);
     std::cout << "Hello, World!" << std::endl;
     string filenumber;
@@ -21,17 +21,30 @@ int main() {
     //python time 696
     //mcmcf time 13s
 
-    filenumber="478237";
+    //filenumber="478237";
     //cost = 84121;
-    cost = 78132;
     //lptime: 64.95
     //python time: 739
+    //filenumber="478237";
+    //cost = 84121;
+    if(argc>1){
+        filenumber = string(argv[1]);
+    }
+    else {
+        filenumber = "738086";
+    }
     FractionalPacking fp("/home/yaoyj11/project/mcmcf/data/test-mcf"+filenumber+".net");
     high_resolution_clock::time_point t1 = high_resolution_clock::now();
     fp.time_debug=true;
     bool suc = true;
-    //fp.min_cost(0.05);
-    suc=fp.fractional_packing(cost, 0.05);
+
+    if(argc>2){
+        cost=atoi(argv[2]);
+        suc=fp.fractional_packing(cost, 0.05);
+    }else{
+       cost =fp.min_cost(0.05);
+    }
+    //cost=68597.74
     if(fp.time_debug){
 
         cout<<"init flow time: "<<fp.init_flow_time<<endl;
@@ -53,7 +66,7 @@ int main() {
     std::cout << "It took me " << time_span.count() / 1000000 << " seconds." << endl;
     cout<<"Number of min_cost_flows: "<<fp.min_cost_count<<endl;
     cout<<"Number of updates: "<<fp.update_count<<endl;
-    cout<<"Cost: "<<fp.get_cost()<<endl;
+    cout<<"Cost: "<<cost<<endl;
 
 /*
 for (int i = 0; i < fp.demands.size(); i++) {
