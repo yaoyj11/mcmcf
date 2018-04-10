@@ -9,6 +9,7 @@
 #include <ctime>
 #include <ratio>
 #include <chrono>
+#include <cassert>
 #include<map>
 #include<set>
 #include<cmath>
@@ -41,6 +42,8 @@ public:
     vector<double>_u;
 
     vector<double>_f;
+
+    vector<double>_y;
 
     double delta_phi_x;
 
@@ -90,6 +93,8 @@ public:
 
     ListDigraph::ArcMap<int> *dual_cost;
 
+    ListDigraph::ArcMap<int> *relax_cap;
+
     FlowSolution solution;
 
     FractionalPacking();
@@ -104,7 +109,11 @@ public:
 
     Flow min_cost_flow(int src, int dst, int d, ListDigraph::ArcMap<int> *c=0);
 
+    Flow min_cost_flow(int src, int dst, int d, ListDigraph::ArcMap<int> *c, ListDigraph::ArcMap<int> * cap);
+
     int min_cost_flow_cost(int src, int dst, int d);
+
+    int min_cost_flow_cost(int src, int dst, int d, ListDigraph::ArcMap<int> *c, ListDigraph::ArcMap<int> * cap);
 
     bool fractional_packing(double b, double epsilon, bool restart= true);
 
