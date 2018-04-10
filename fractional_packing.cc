@@ -409,6 +409,13 @@ double FractionalPacking::compute_potential_function(bool recompute_u) {
         _rou = _rou > _u[i] ? _rou : _u[i];
     }
     _potential = 0;
+    /*
+    double sum_y = 0;
+    for (int i = 0; i < _u.size(); i++) {
+        sum_y += _alpha * _f[i];
+    }
+    sum_y += delta_phi_x/9;
+     */
     delta_phi_x = 0;
     for (int i = 0; i < _u.size(); i++) {
         _f[i] = exp(_alpha * (_u[i] - 1.0));
@@ -416,6 +423,7 @@ double FractionalPacking::compute_potential_function(bool recompute_u) {
         delta_phi_x += _f[i] * _u[i];
         _y[i] = _alpha * _f[i];
     }
+    _y[_y.size() - 1] += delta_phi_x/9;
 
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
@@ -437,6 +445,14 @@ double FractionalPacking::update_potential_function() {
         _rou = _rou > _u[i] ? _rou : _u[i];
     }
     _potential -= _f.back();
+    /*
+    double sum_y = 0;
+    for (int i = 0; i < _u.size(); i++) {
+        sum_y += _alpha * _f[i];
+    }
+    sum_y += delta_phi_x/9;
+     */
+    _y[_y.size() - 1] -= delta_phi_x/9;
     delta_phi_x -= _f.back() * _u.back();
     for (const auto &i:change_edges) {
         _potential -= _f[i];
@@ -449,6 +465,7 @@ double FractionalPacking::update_potential_function() {
     _f[_f.size() - 1] = exp(_alpha * (_u.back() - 1.0));
     _potential += _f.back();
     delta_phi_x +=  _f.back() * _u.back();
+    _y[_y.size() - 1] += delta_phi_x/9;
     change_edges.clear();
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
@@ -478,12 +495,18 @@ void FractionalPacking::iteration() {
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     //equition(6) delta phi x dot x
 
+    /*
     double tmp1 = _alpha * _f.back();
     double tmp2 = delta_phi_x / 9.0;
     for (int i = 0; i < cost_map.size(); i++) {
         //delta_x\PHI(x); m_th row of first term; second term
         dual_cost->operator[](graph.arcFromId(i)) = int((_alpha * _f[i] * inverse_capacity[i] +
                                                          tmp1 * beta[i] + tmp2 * beta[i]));
+    }
+     */
+    for (int i = 0; i < cost_map.size(); i++) {
+        //delta_x\PHI(x); m_th row of first term; second term
+        dual_cost->operator[](graph.arcFromId(i)) = int(_y[i]*inverse_capacity[i] + _y.back()*beta[i]);
     }
     // let x = x_1 * x_2 ... * x_k, choose x_i in round-robin order, update x_i
     int demand_index = draw_demand_index();
@@ -569,7 +592,7 @@ double FractionalPacking::iteration_all() {
     double tmp2 = delta_phi_x / 9.0;
     for (int i = 0; i < cost_map.size(); i++) {
         //delta_x\PHI(x); m_th row of first term; second term
-        double c = int((_alpha * _f[i] * inverse_capacity[i] + tmp1 * beta[i] + tmp2 * beta[i]));
+        double c = int(_y[i]*inverse_capacity[i] + _y.back()* beta[i]);
         dual_cost->operator[](graph.arcFromId(i)) = c;
         solution_dual_cost += solution.used_bw[i] * c;
 
@@ -579,15 +602,11 @@ double FractionalPacking::iteration_all() {
     for (int i = 0; i < demands.size(); i++) {
         cost += min_cost_flow_cost(demands[i].src, demands[i].dst, demands[i].val, dual_cost, relax_cap);
     }
-    /*compute sum_y;
-     * y_i(i=1->m) =alpha*f(u_i)
-     * y_{m+1} = alpha*f(u_(m+1)) + sum(fi*ui)/9
-     * */
+    //compute sum_y
     double sum_y = 0;
     for (int i = 0; i < _u.size(); i++) {
-        sum_y += _alpha * _f[i];
+        sum_y+=_y[i];
     }
-    sum_y += delta_phi_x/9;
 
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
@@ -598,7 +617,7 @@ double FractionalPacking::iteration_all() {
      * According to the paper lambda* sum_y >=solution cost of dual edges
      *
      */
-    if (cost / sum_y > 1) {
+    if (cost / sum_y > 1.00) {
         cout << "cost(f_start): " << cost << " sum_y" << sum_y * _rou
              << " solution cost: " << solution_dual_cost
              << " rou: " << _rou << endl;
