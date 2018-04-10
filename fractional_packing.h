@@ -135,7 +135,7 @@ private:
 
     void iteration();
 
-    double iteration_all();
+    bool iteration_all();
 
     Flow update_flow(const Flow &oldx, const Flow &newx, double theta);
 
