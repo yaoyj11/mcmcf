@@ -661,8 +661,13 @@ int FractionalPacking::iteration_all() {
         //+1 to make sure that relaxed capacity >=lamda* u
         relax_cap->operator[](graph.arcFromId(i)) = int(_rou * capacity_map[i]*SCALE);
     }
+    FlowSolution new_sol;
     for (int i = 0; i < demands.size(); i++) {
-        cost += min_cost_flow_cost(demands[i].src, demands[i].dst, demands[i].val, SCALE, dual_cost, relax_cap);
+        Flow flow= min_cost_flow(demands[i].src, demands[i].dst, demands[i].val, SCALE, dual_cost, relax_cap);
+        solution.add_flow(i, flow);
+        for(const auto&kv:flow){
+            cost += dual_cost->operator[](graph.arcFromId(kv.first)) * kv.second;
+        }
     }
     //compute sum_y
     double sum_y = 0;

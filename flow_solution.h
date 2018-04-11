@@ -25,6 +25,7 @@ public:
     bool empty();
 
     void add_flow(int d, Flow f, vector<double> &bw_change,  set<int>&change_edges);
+    void add_flow(int d, Flow f);
 
     Flow rm_flow(int d, vector<double> &bw_change, set<int> &change_edges);
 
