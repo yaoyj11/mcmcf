@@ -149,24 +149,30 @@ double FractionalPacking::min_cost(double epsilon) {
     double max = -1;
     //first determine a upper bound
     cout<<"try "<<2*min<<endl;
-    while (!fractional_packing(2 * min, epsilon, false)) {
+    while (fractional_packing(2 * min, epsilon, false)!=0) {
         min = 2 * min;
         cout<<"try "<<2*min<<endl;
         cout << "min: " << min << "max: " << max << endl;
     }
     FlowSolution res = solution;
-    max = 2 * min * (1 -epsilon*epsilon);
+    max = 2 * min * (1 + epsilon);
     cout << "min: " << min << "max: " << max << endl;
-    while (max >min) {
-        double trial = (max + min) / 2;
+    while (max >min*(1+epsilon)) {
+        double x = max/min-1;
+        double theta = (sqrt((1+x)/(1+epsilon))-1)/x;
+        double trial = theta*max +(1-theta)*min;
         cout<<"try "<<trial<<endl;
-        if (fractional_packing(trial, epsilon, false)) {
-            max = trial*(1-epsilon*epsilon);
+        int ret = fractional_packing(trial, epsilon, false);
+        if (ret==0) {
+            max = trial*(1+epsilon);
             cout<<"suc"<<endl;
             res = solution;
-        } else {
+        } else if(ret==1){
             min = trial;
-            cout<<"fail"<<endl;
+            cout<<"fail -1"<<endl;
+        }else{
+            min = trial*(1+epsilon);
+            cout<<"fail-2"<<endl;
         }
         cout << "min: " << min << "max: " << max << endl;
     }
@@ -175,7 +181,7 @@ double FractionalPacking::min_cost(double epsilon) {
     return get_cost();
 }
 
-bool FractionalPacking::fractional_packing(double b, double epsilon, bool restart) {
+int FractionalPacking::fractional_packing(double b, double epsilon, bool restart) {
     set_buget(b);
     _epsilon = cost_map.size()-1;
 
@@ -203,11 +209,12 @@ bool FractionalPacking::fractional_packing(double b, double epsilon, bool restar
         cout << current_date_time() << " epsilon: " << _epsilon << endl;
         while (_potential > 3 * _m&&_rou>(1+epsilon)) {
             //while(_rou>1+_epsilon){
-            if(rand()%(2*demands.size())!=0) {
+            if(rand()%(demands.size())!=0) {
                 iteration();
             }else {
-                if(!iteration_all()){
-                    return false;
+                int res = iteration_all();
+                if(res!=0){
+                    return res;
                 }
                 else{
                     if(rand()%100==0){
@@ -228,7 +235,7 @@ bool FractionalPacking::fractional_packing(double b, double epsilon, bool restar
         }
         compute_potential_function();
     }
-    return true;
+    return 0;
 }
 
 Flow FractionalPacking::min_cost_flow(int src, int dst, int d, const vector<double> &cost,
@@ -620,10 +627,14 @@ void FractionalPacking::iteration() {
     }
 }
 
-bool FractionalPacking::iteration_all() {
+int FractionalPacking::iteration_all() {
     /*
      * at each iteraion, compute the new cost, then choose an x_i to optimize, then update x..
         according to section 2.2 and section 3.1
+     *
+     * Return 0 if succeed
+     * return 1 for early termination
+     * return 2 for no improvement
      */
 
     //NOTE update_potential_function has to be called before iteration
@@ -635,7 +646,7 @@ bool FractionalPacking::iteration_all() {
     }
     if(!res){
         cout<<"no improvement, fail"<<endl;
-        return false;
+        return 2;
     }
     //equition(6) delta phi x dot x
     double cost = 0;
@@ -668,7 +679,7 @@ bool FractionalPacking::iteration_all() {
              << " solution cost: " << solution_dual_cost
              << " rou: " << _rou << endl;
         cout << cost / sum_y << endl;
-        return false;
+        return 1;
     }
     assert(sum_y*_rou >= solution_dual_cost);
     assert(solution_dual_cost >=cost);
@@ -677,7 +688,7 @@ bool FractionalPacking::iteration_all() {
         duration<double, std::micro> time_span = t3 - t2;
         iteration_all_time += time_span.count() / 1000;
     }
-    return true;
+    return 0;
 }
 
 Flow FractionalPacking::update_flow(const Flow &oldx, const Flow &newx, double theta) {

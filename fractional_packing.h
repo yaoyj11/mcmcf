@@ -125,7 +125,7 @@ public:
     double min_cost_flow_cost(int src, int dst, int d, int scale, ListDigraph::ArcMap<int> *c,
                            ListDigraph::ArcMap<int> * cap);
 
-    bool fractional_packing(double b, double epsilon, bool restart= true);
+    int fractional_packing(double b, double epsilon, bool restart= true);
 
     double min_cost(double epsilon);
 
@@ -145,7 +145,7 @@ private:
 
     void iteration();
 
-    bool iteration_all();
+    int iteration_all();
 
     Flow update_flow(const Flow &oldx, const Flow &newx, double theta);
 
