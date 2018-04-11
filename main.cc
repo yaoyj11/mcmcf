@@ -42,9 +42,13 @@ int main(int argc, char* argv[]) {
         cost=atoi(argv[2]);
         suc=fp.fractional_packing(cost, 0.05);
     }else{
-       cost =fp.min_cost(0.08);
+       cost =fp.min_cost(0.05);
     }
     //cost=68597.74
+    cout<<"times"<<endl;
+    for(int i=0; i<fp.mab_times.size();i++){
+        cout<<fp.mab_times[i]<<" "<<fp.mab_index[i]<<endl;
+    }
     if(fp.time_debug){
 
         cout<<"init flow time: "<<fp.init_flow_time<<endl;
@@ -67,6 +71,7 @@ int main(int argc, char* argv[]) {
     cout<<"Number of min_cost_flows: "<<fp.min_cost_count<<endl;
     cout<<"Number of updates: "<<fp.update_count<<endl;
     cout<<"Cost: "<<cost<<endl;
+    cout<<endl;
 
 /*
 for (int i = 0; i < fp.demands.size(); i++) {

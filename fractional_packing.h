@@ -89,6 +89,10 @@ public:
 
     vector<bool> improve;
 
+    vector<int> mab_times;
+
+    vector<double> mab_index;
+
     bool improve_flag;
 
     ListDigraph graph;
@@ -151,13 +155,10 @@ private:
 
     vector<double> mab_reward;
 
-    vector<double> mab_index;
-
     double mab_average;
 
     bool mab_flag;
 
-    vector<int> mab_times;
 
     int draw_demand_index();
 

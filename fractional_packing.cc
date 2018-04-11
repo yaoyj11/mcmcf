@@ -150,7 +150,7 @@ double FractionalPacking::min_cost(double epsilon) {
     //first determine a upper bound
     cout<<"try "<<2*min<<endl;
     while (!fractional_packing(2 * min, epsilon, false)) {
-        min = 2 * min*(1+epsilon);
+        min = 2 * min;
         cout<<"try "<<2*min<<endl;
         cout << "min: " << min << "max: " << max << endl;
     }
@@ -178,22 +178,6 @@ double FractionalPacking::min_cost(double epsilon) {
 bool FractionalPacking::fractional_packing(double b, double epsilon, bool restart) {
     set_buget(b);
     _epsilon = cost_map.size()-1;
-    if (time_debug) {
-
-        init_flow_time = 0;
-
-        min_cost_time = 0;
-
-        new_ton_time = 0;
-
-        potential_time = 0;
-
-        update_flow_time = 0;
-
-        iteration_time = 0;
-
-        draw_index_time = 0;
-    }
 
     if (restart) {
         _m = cost_map.size() + 1;
@@ -219,7 +203,7 @@ bool FractionalPacking::fractional_packing(double b, double epsilon, bool restar
         cout << current_date_time() << " epsilon: " << _epsilon << endl;
         while (_potential > 3 * _m&&_rou>(1+epsilon)) {
             //while(_rou>1+_epsilon){
-            if(rand()%demands.size()!=0) {
+            if(rand()%(2*demands.size())!=0) {
                 iteration();
             }else {
                 if(!iteration_all()){
@@ -617,6 +601,7 @@ void FractionalPacking::iteration() {
                 duration<double, std::micro> time_span = t3 - t2;
                 iteration_time += time_span.count() / 1000;
             }
+            return;
         }
     } else {
         update_mab(demand_index, 0);
@@ -627,6 +612,11 @@ void FractionalPacking::iteration() {
             improve_flag=false;
         }
         improve[demand_index]=false;
+        if (time_debug) {
+            high_resolution_clock::time_point t3 = high_resolution_clock::now();
+            duration<double, std::micro> time_span = t3 - t2;
+            iteration_time += time_span.count() / 1000;
+        }
     }
 }
 
@@ -669,11 +659,6 @@ bool FractionalPacking::iteration_all() {
         sum_y+=_y[i];
     }
 
-    if (time_debug) {
-        high_resolution_clock::time_point t3 = high_resolution_clock::now();
-        duration<double, std::micro> time_span = t3 - t2;
-        iteration_all_time += time_span.count() / 1000;
-    }
     /*
      * According to the paper lambda* sum_y >=solution cost of dual edges
      *
@@ -687,6 +672,11 @@ bool FractionalPacking::iteration_all() {
     }
     assert(sum_y*_rou >= solution_dual_cost);
     assert(solution_dual_cost >=cost);
+    if (time_debug) {
+        high_resolution_clock::time_point t3 = high_resolution_clock::now();
+        duration<double, std::micro> time_span = t3 - t2;
+        iteration_all_time += time_span.count() / 1000;
+    }
     return true;
 }
 
@@ -777,6 +767,9 @@ double FractionalPacking::get_cost() {
 }
 
 int FractionalPacking::draw_demand_index() {
+    _i=(++_i)%demands.size();
+    return _i;
+    /*
     if (mab_flag) {
         int res = _i;
         if (_i == demands.size() - 1) {
@@ -795,7 +788,7 @@ int FractionalPacking::draw_demand_index() {
                     draw_index_time += time_span.count() / 1000;
                 }
                 return _i;
-            } else if (rand() % 3 == 0) {
+            } else if (rand() % 4 == 0) {
                 if (time_debug) {
                     high_resolution_clock::time_point t3 = high_resolution_clock::now();
                     duration<double, std::micro> time_span = t3 - t2;
@@ -805,15 +798,19 @@ int FractionalPacking::draw_demand_index() {
             }
         }
     }
+     */
 }
 
 void FractionalPacking::update_mab(int index, double r) {
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     //mab_reward[index] = (mab_reward[index]*mab_times[index] + r)/(++mab_times[index]);
     //mab_index[index] = mab_reward[index] + sqrt(3/mab_times[index]);
-    double theta = 0.8;
-    mab_average = mab_average + (r - mab_index[index]) / mab_index.size();
-    mab_index[index] = r;
+    double theta = 0;
+    if(r>0){
+        mab_times[index]++;
+    }
+    mab_average = mab_average + ((1-theta)*r - theta*mab_index[index]) / mab_index.size();
+    mab_index[index] = theta*r + (1-theta)*mab_index[index];
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
         duration<double, std::micro> time_span = t3 - t2;
