@@ -645,8 +645,7 @@ int FractionalPacking::iteration_all() {
         res |= improve[i];
     }
     if(!res){
-        cout<<"no improvement, fail"<<endl;
-        return 2;
+        return  2;
     }
     //equition(6) delta phi x dot x
     double cost = 0;
@@ -661,12 +660,20 @@ int FractionalPacking::iteration_all() {
         //+1 to make sure that relaxed capacity >=lamda* u
         relax_cap->operator[](graph.arcFromId(i)) = int(_rou * capacity_map[i]*SCALE);
     }
-    FlowSolution new_sol;
+    FlowSolution new_sol(cost_map.size());
     for (int i = 0; i < demands.size(); i++) {
-        Flow flow= min_cost_flow(demands[i].src, demands[i].dst, demands[i].val, SCALE, dual_cost, relax_cap);
-        solution.add_flow(i, flow);
-        for(const auto&kv:flow){
-            cost += dual_cost->operator[](graph.arcFromId(kv.first)) * kv.second;
+        if(i==0) {
+            Flow flow = min_cost_flow(demands[i].src, demands[i].dst, demands[i].val, SCALE, dual_cost, relax_cap);
+            new_sol.add_flow(i, flow);
+            for (const auto &kv:flow) {
+                cost += dual_cost->operator[](graph.arcFromId(kv.first)) * kv.second;
+            }
+        }else{
+            Flow flow = min_cost_flow(demands[i].src, demands[i].dst, demands[i].val, SCALE, 0, 0);
+            new_sol.add_flow(i, flow);
+            for (const auto &kv:flow) {
+                cost += dual_cost->operator[](graph.arcFromId(kv.first)) * kv.second;
+            }
         }
     }
     //compute sum_y
@@ -688,6 +695,28 @@ int FractionalPacking::iteration_all() {
     }
     assert(sum_y*_rou >= solution_dual_cost);
     assert(solution_dual_cost >=cost);
+
+    //update
+    /*
+    vector<double>ax = _u;
+    vector<double>ax_star(_u.size(), 0);
+    double ax_star_m=0;
+    for(int i=0; i<cost_map.size(); i++){
+        ax_star[i] = new_sol.used_bw[i]*inverse_capacity[i];
+        ax_star_m += new_sol.used_bw[i]*beta[i];
+    }
+    ax_star[ax_star.size()-1] = ax_star_m;
+
+    double old_potential = _potential;
+    FlowSolution old_solution = solution;
+    double theta = compute_theta_newton_raphson(ax, ax_star, 0.01, 0, 1.0);
+    solution.update(new_sol, theta);
+    double new_potential = compute_potential_function(true);
+    if(new_potential>old_potential){
+        solution = old_solution;
+        compute_potential_function(true);
+    }
+     */
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
         duration<double, std::micro> time_span = t3 - t2;
@@ -783,9 +812,6 @@ double FractionalPacking::get_cost() {
 }
 
 int FractionalPacking::draw_demand_index() {
-    _i=(++_i)%demands.size();
-    return _i;
-    /*
     if (mab_flag) {
         int res = _i;
         if (_i == demands.size() - 1) {
@@ -814,7 +840,6 @@ int FractionalPacking::draw_demand_index() {
             }
         }
     }
-     */
 }
 
 void FractionalPacking::update_mab(int index, double r) {
