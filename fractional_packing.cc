@@ -182,6 +182,7 @@ double FractionalPacking::min_cost(double epsilon) {
 }
 
 int FractionalPacking::fractional_packing(double b, double epsilon, bool restart) {
+    high_resolution_clock::time_point t2 = high_resolution_clock::now();
     set_buget(b);
     _epsilon = cost_map.size()-1;
 
@@ -211,11 +212,16 @@ int FractionalPacking::fractional_packing(double b, double epsilon, bool restart
         cout << current_date_time() << " epsilon: " << _epsilon << endl;
         while (_potential > 3 * _m&&_rou>(1+epsilon)) {
             //while(_rou>1+_epsilon){
-            if(rand()%(2*demands.size())!=0) {
+            if(rand()%(3*demands.size())!=0) {
                 iteration();
             }else {
                 int res = iteration_all();
                 if(res!=0){
+                    if (time_debug) {
+                        high_resolution_clock::time_point t3 = high_resolution_clock::now();
+                        duration<double, std::micro> time_span = t3 - t2;
+                        cout<<"fractional time" <<time_span.count() / 1000<<endl;
+                    }
                     return res;
                 }
             }
@@ -230,6 +236,11 @@ int FractionalPacking::fractional_packing(double b, double epsilon, bool restart
             _epsilon = epsilon;
         }
         compute_potential_function();
+    }
+    if (time_debug) {
+        high_resolution_clock::time_point t3 = high_resolution_clock::now();
+        duration<double, std::micro> time_span = t3 - t2;
+        cout<<"fractional time" <<time_span.count() / 1000<<endl;
     }
     return 0;
 }
@@ -670,6 +681,8 @@ int FractionalPacking::iteration_all() {
         cout << cost / sum_y << endl;
         return 1;
     }
+    double ratio = (sum_y*_rou/solution_dual_cost-1)/(solution_dual_cost/cost-1);
+    cout<<"ratio"<<ratio<<endl;
     assert(sum_y*_rou >= solution_dual_cost);
     assert(solution_dual_cost >=cost);
     return 0;
