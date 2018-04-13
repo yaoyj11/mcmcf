@@ -151,24 +151,28 @@ double FractionalPacking::min_cost(double epsilon) {
     double max = -1;
     //first determine a upper bound
     cout<<"try "<<2*min<<endl;
-    while (!fractional_packing(2 * min, epsilon, false)) {
-        min = 2 * min*(1+epsilon);
+    while (fractional_packing(2 * min, epsilon, false)>0) {
+        min = 2 * min;
         cout<<"try "<<2*min<<endl;
         cout << "min: " << min << "max: " << max << endl;
     }
     FlowSolution res = solution;
     max = 2 * min * (1 -epsilon*epsilon);
     cout << "min: " << min << "max: " << max << endl;
-    while (max >min) {
+    while (max >min&& get_cost()>(min*(1+epsilon))) {
         double trial = (max + min) / 2;
         cout<<"try "<<trial<<endl;
-        if (fractional_packing(trial, epsilon, false)) {
+        int ret = fractional_packing(trial, epsilon, false);
+        if (ret==0) {
             max = trial*(1-epsilon*epsilon);
             cout<<"suc"<<endl;
             res = solution;
-        } else {
+        } else if(ret==1){
             min = trial;
             cout<<"fail"<<endl;
+        }else{
+            min=trial*(1+epsilon);
+            cout<<"no improvement"<<endl;
         }
         cout << "min: " << min << "max: " << max << endl;
     }
@@ -177,7 +181,7 @@ double FractionalPacking::min_cost(double epsilon) {
     return get_cost();
 }
 
-bool FractionalPacking::fractional_packing(double b, double epsilon, bool restart) {
+int FractionalPacking::fractional_packing(double b, double epsilon, bool restart) {
     set_buget(b);
     _epsilon = cost_map.size()-1;
 
@@ -210,8 +214,9 @@ bool FractionalPacking::fractional_packing(double b, double epsilon, bool restar
             if(rand()%(2*demands.size())!=0) {
                 iteration();
             }else {
-                if(!iteration_all()){
-                    return false;
+                int res = iteration_all();
+                if(res!=0){
+                    return res;
                 }
             }
         }
@@ -226,7 +231,7 @@ bool FractionalPacking::fractional_packing(double b, double epsilon, bool restar
         }
         compute_potential_function();
     }
-    return true;
+    return 0;
 }
 
 Flow FractionalPacking::min_cost_flow(int src, int dst, int d, const vector<double> &cost,
@@ -610,7 +615,7 @@ void FractionalPacking::iteration() {
     }
 }
 
-bool FractionalPacking::iteration_all() {
+int FractionalPacking::iteration_all() {
     /*
      * at each iteraion, compute the new cost, then choose an x_i to optimize, then update x..
         according to section 2.2 and section 3.1
@@ -625,7 +630,7 @@ bool FractionalPacking::iteration_all() {
     }
     if(!res){
         cout<<"no improvement, fail"<<endl;
-        return false;
+        return 2;
     }
     //equition(6) delta phi x dot x
     double cost = 0;
@@ -663,11 +668,11 @@ bool FractionalPacking::iteration_all() {
              << " solution cost: " << solution_dual_cost
              << " rou: " << _rou << endl;
         cout << cost / sum_y << endl;
-        return false;
+        return 1;
     }
     assert(sum_y*_rou >= solution_dual_cost);
     assert(solution_dual_cost >=cost);
-    return true;
+    return 0;
 }
 
 Flow FractionalPacking::update_flow(const Flow &oldx, const Flow &newx, double theta) {
