@@ -204,7 +204,7 @@ bool FractionalPacking::fractional_packing(double b, double epsilon, bool restar
     }
     compute_potential_function(true);
     while (_epsilon - epsilon> -1e-6) {
-        cout << current_date_time() << " epsilon: " << _epsilon << endl;
+        //cout << current_date_time() << " epsilon: " << _epsilon << endl;
         while (_potential > 3 * _m&&_rou>(1+epsilon)) {
             //while(_rou>1+_epsilon){
             if(rand()%demands.size()!=0) {
@@ -460,35 +460,28 @@ double FractionalPacking::update_potential_function() {
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     for (const auto &i:change_edges) {
         _u[i] = solution.used_bw[i] * inverse_capacity[i];
-        _bb[i] = bw_change[i] * beta[i];
-        _u[_u.size() - 1] += _bb[i];
+        _bb[i] = solution.used_bw[i] * beta[i];
         bw_change[i] = 0;
+    }
+    _u[_m-1]=0;
+    for(int i=0; i<cost_map.size();i++){
+        _u[_m-1]+=_bb[i];
     }
     _rou = 0;
     for (int i = 0; i < _u.size(); i++) {
         _rou = _rou > _u[i] ? _rou : _u[i];
     }
-    _potential -= _f.back();
-    /*
-    double sum_y = 0;
-    for (int i = 0; i < _u.size(); i++) {
-        sum_y += _alpha * _f[i];
-    }
-    sum_y += delta_phi_x/9;
-     */
-    _y[_y.size() - 1] -= delta_phi_x/9;
-    delta_phi_x -= _f.back() * _u.back();
     for (const auto &i:change_edges) {
-        _potential -= _f[i];
-        delta_phi_x -=  _f[i] * _u[i];
         _f[i] = exp(_alpha * (_u[i] - 1.0));
-        _potential += _f[i];
-        delta_phi_x += _f[i] * _u[i];
-        _y[i] = _alpha * _f[i];
     }
     _f[_f.size() - 1] = exp(_alpha * (_u.back() - 1.0));
-    _potential += _f.back();
-    delta_phi_x +=  _f.back() * _u.back();
+    _potential = 0;
+    delta_phi_x=0;
+    for(int i=0; i<_m; i++){
+        delta_phi_x+=_f[i]*_u[i];
+        _potential +=_f[i];
+        _y[i] = _alpha * _f[i];
+    }
     _y[_y.size() - 1] += delta_phi_x/9;
     change_edges.clear();
     if (time_debug) {
