@@ -132,6 +132,8 @@ double FractionalPacking::min_cost(double epsilon) {
     _u = vector<double>(_m, 0);
     _y = vector<double>(_m, 0);
     _f = vector<double>(_m, 0);
+    _fu=vector<double>(_m,0);
+    _bb = vector<double>(cost_map.size(),0);
     improve= vector<bool>(demands.size(),true);
     improve_flag=false;
     bw_change = vector<double>(cost_map.size(), 0);
@@ -178,27 +180,13 @@ double FractionalPacking::min_cost(double epsilon) {
 bool FractionalPacking::fractional_packing(double b, double epsilon, bool restart) {
     set_buget(b);
     _epsilon = cost_map.size()-1;
-    if (time_debug) {
-
-        init_flow_time = 0;
-
-        min_cost_time = 0;
-
-        new_ton_time = 0;
-
-        potential_time = 0;
-
-        update_flow_time = 0;
-
-        iteration_time = 0;
-
-        draw_index_time = 0;
-    }
 
     if (restart) {
         _m = cost_map.size() + 1;
         _u = vector<double>(_m, 0);
         _y = vector<double>(_m, 0);
+        _fu=vector<double>(_m,0);
+        _bb = vector<double>(cost_map.size(),0);
         _f = vector<double>(_m, 0);
         improve= vector<bool>(demands.size(),true);
         improve_flag=false;
@@ -433,7 +421,8 @@ double FractionalPacking::compute_potential_function(bool recompute_u) {
         _u[_u.size() - 1] = 0;
         for (int i = 0; i < cost_map.size(); i++) {
             _u[i] = solution.used_bw[i] * inverse_capacity[i];
-            _u[_u.size() - 1] += solution.used_bw[i] * beta[i];
+            _bb[i]=solution.used_bw[i]*beta[i];
+            _u[_u.size() - 1] += _bb[i];
             bw_change[i] = 0;
         }
     }
@@ -471,7 +460,8 @@ double FractionalPacking::update_potential_function() {
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     for (const auto &i:change_edges) {
         _u[i] = solution.used_bw[i] * inverse_capacity[i];
-        _u[_u.size() - 1] += bw_change[i] * beta[i];
+        _bb[i] = bw_change[i] * beta[i];
+        _u[_u.size() - 1] += _bb[i];
         bw_change[i] = 0;
     }
     _rou = 0;
