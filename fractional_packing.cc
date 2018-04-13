@@ -204,22 +204,16 @@ bool FractionalPacking::fractional_packing(double b, double epsilon, bool restar
     }
     compute_potential_function(true);
     while (_epsilon - epsilon> -1e-6) {
-        //cout << current_date_time() << " epsilon: " << _epsilon << endl;
+        cout << current_date_time() << " epsilon: " << _epsilon << endl;
         while (_potential > 3 * _m&&_rou>(1+epsilon)) {
             //while(_rou>1+_epsilon){
-            if(rand()%demands.size()!=0) {
+            if(rand()%(2*demands.size())!=0) {
                 iteration();
             }else {
                 if(!iteration_all()){
                     return false;
                 }
-                else{
-                    if(rand()%100==0){
-                        cout<<_rou<<" cost: "<<get_cost()<<endl;
-                    }
-                }
             }
-            //cout<<potential<<endl;
         }
         if (abs(_epsilon - epsilon)<1e-6) {
             compute_potential_function(true);
@@ -442,6 +436,7 @@ double FractionalPacking::compute_potential_function(bool recompute_u) {
     delta_phi_x = 0;
     for (int i = 0; i < _u.size(); i++) {
         _f[i] = exp(_alpha * (_u[i] - 1.0));
+        _fu[i]=_f[i]*_u[i];
         _potential += _f[i];
         delta_phi_x += _f[i] * _u[i];
         _y[i] = _alpha * _f[i];
@@ -451,7 +446,7 @@ double FractionalPacking::compute_potential_function(bool recompute_u) {
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
         duration<double, std::micro> time_span = t3 - t2;
-        potential_time += time_span.count() / 1000;
+        compute_potential_time += time_span.count() / 1000;
     }
     return _potential;
 }
@@ -460,6 +455,9 @@ double FractionalPacking::update_potential_function() {
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     for (const auto &i:change_edges) {
         _u[i] = solution.used_bw[i] * inverse_capacity[i];
+        _f[i] = exp(_alpha * (_u[i] - 1.0));
+        _fu[i]=_f[i]*_u[i];
+        _y[i] = _alpha * _f[i];
         _bb[i] = solution.used_bw[i] * beta[i];
         bw_change[i] = 0;
     }
@@ -467,27 +465,26 @@ double FractionalPacking::update_potential_function() {
     for(int i=0; i<cost_map.size();i++){
         _u[_m-1]+=_bb[i];
     }
+    _f[_f.size() - 1] = exp(_alpha * (_u.back() - 1.0));
+    _fu[_m-1]=_f[_m-1]*_u[_m-1];
+    _y[_m-1] = _alpha*_f[_m-1];
     _rou = 0;
+
     for (int i = 0; i < _u.size(); i++) {
         _rou = _rou > _u[i] ? _rou : _u[i];
     }
-    for (const auto &i:change_edges) {
-        _f[i] = exp(_alpha * (_u[i] - 1.0));
-    }
-    _f[_f.size() - 1] = exp(_alpha * (_u.back() - 1.0));
     _potential = 0;
     delta_phi_x=0;
     for(int i=0; i<_m; i++){
-        delta_phi_x+=_f[i]*_u[i];
+        delta_phi_x+=_fu[i];
         _potential +=_f[i];
-        _y[i] = _alpha * _f[i];
     }
     _y[_y.size() - 1] += delta_phi_x/9;
     change_edges.clear();
     if (time_debug) {
         high_resolution_clock::time_point t3 = high_resolution_clock::now();
         duration<double, std::micro> time_span = t3 - t2;
-        potential_time += time_span.count() / 1000;
+        update_potential_time += time_span.count() / 1000;
     }
     return _potential;
 }
@@ -594,7 +591,7 @@ void FractionalPacking::iteration() {
             update_mab(demand_index, 0);
             solution.rm_flow(demand_index, bw_change, change_edges);
             solution.add_flow(demand_index, old_fxi, bw_change, change_edges);
-            compute_potential_function(true);
+            update_potential_function();
             if (time_debug) {
                 high_resolution_clock::time_point t3 = high_resolution_clock::now();
                 duration<double, std::micro> time_span = t3 - t2;
