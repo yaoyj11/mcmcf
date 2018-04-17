@@ -56,7 +56,8 @@ int main(int argc, char* argv[]) {
 
         cout<<"new_ton_time: "<<fp.new_ton_time<<endl;
 
-        cout<<"potential_time: "<<fp.potential_time<<endl;
+        cout<<"compute potential_time: "<<fp.compute_potential_time<<endl;
+        cout<<"update potential_time: "<<fp.update_potential_time<<endl;
 
         cout<<"update_flow_time: "<<fp.update_flow_time<<endl;
         cout<<"iteration_time: "<<fp.iteration_time<<endl;

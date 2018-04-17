@@ -45,6 +45,10 @@ public:
 
     vector<double>_y;
 
+    vector<double>_fu;
+
+    vector<double>_bb;
+
     double delta_phi_x;
 
     vector<double>bw_change;
@@ -67,7 +71,9 @@ public:
 
     double new_ton_time;
 
-    double potential_time;
+    double compute_potential_time;
+
+    double update_potential_time;
 
     double update_flow_time;
 
@@ -158,6 +164,8 @@ private:
     double mab_average;
 
     bool mab_flag;
+
+    int non_update;
 
 
     int draw_demand_index();
