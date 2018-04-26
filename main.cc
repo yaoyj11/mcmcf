@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
     //cost=68597.74
     cout<<"times"<<endl;
     for(int i=0; i<fp.mab_times.size();i++){
-        cout<<fp.mab_times[i]<<" "<<fp.mab_index[i]<<endl;
+        cout<<i<<" "<<fp.mab_times[i]<<" "<<fp.mab_index[i]<<endl;
     }
     if(fp.time_debug){
 

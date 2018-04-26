@@ -59,6 +59,16 @@ public:
 
     double _alpha;
 
+    double _bound;
+
+    int _adaptive_alpha;
+
+    bool alpha_flag;
+
+    const static int alpha_times=1;
+
+    double theoritical_alpha;
+
     double _potential;
 
     double _rou;

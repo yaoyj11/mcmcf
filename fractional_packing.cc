@@ -207,10 +207,14 @@ int FractionalPacking::fractional_packing(double b, double epsilon, bool restart
         mab_flag = true;
         compute_init_flow();
     }
+    theoritical_alpha = 1 / _epsilon * log(3 * _m);
+    _alpha = theoritical_alpha;
     compute_potential_function(true);
     while (_epsilon - epsilon> -1e-6) {
+        _adaptive_alpha = alpha_times;
+        alpha_flag = true;
         cout << current_date_time() << " epsilon: " << _epsilon << endl;
-        while (_potential > 3 * _m&&_rou>(1+epsilon)) {
+        while (_potential > _bound && _rou>(1+epsilon)) {
             //while(_rou>1+_epsilon){
             if(rand()%(3*demands.size())!=0) {
                 iteration();
@@ -235,6 +239,8 @@ int FractionalPacking::fractional_packing(double b, double epsilon, bool restart
         if (_epsilon < epsilon) {
             _epsilon = epsilon;
         }
+        theoritical_alpha = 1 / _epsilon * log(3 * _m);
+        _alpha = theoritical_alpha;
         compute_potential_function();
     }
     if (time_debug) {
@@ -426,7 +432,7 @@ string FractionalPacking::current_date_time() {
 
 double FractionalPacking::compute_potential_function(bool recompute_u) {
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
-    _alpha = 1 / _epsilon * log(3 * _m);
+    _bound = exp(_alpha * _epsilon);
     if (recompute_u) {
         _u[_u.size() - 1] = 0;
         for (int i = 0; i < cost_map.size(); i++) {
@@ -702,8 +708,19 @@ int FractionalPacking::iteration_all() {
         cout << cost / sum_y << endl;
         return 1;
     }
-    double ratio = (sum_y*_rou/solution_dual_cost-1)/(solution_dual_cost/cost-1);
-    cout<<"ratio"<<ratio<<endl;
+    double ratio = (sum_y * _rou / solution_dual_cost - 1) / (solution_dual_cost / cost - 1);
+    if(alpha_flag) {
+        //942605 before adaptive alpha 198secs
+        cout << "ratio" << ratio << endl;
+        if (ratio < 0.5 && _adaptive_alpha > 0) {
+            _alpha = _alpha * 0.618;
+            _adaptive_alpha--;
+        } else{
+            _alpha = theoritical_alpha;
+            alpha_flag = false;
+        }
+        compute_potential_function(false);
+    }
     assert(sum_y*_rou >= solution_dual_cost);
     assert(solution_dual_cost >=cost);
 
