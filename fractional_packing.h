@@ -89,6 +89,8 @@ public:
 
     double iteration_time;
 
+    double update_time;
+
     double iteration_all_time;
 
     double draw_index_time;
@@ -160,6 +162,8 @@ private:
     double update_potential_function();
 
     void iteration();
+
+    void update(int demand_index, const Flow & oldf, const Flow &newf);
 
     int iteration_all();
 

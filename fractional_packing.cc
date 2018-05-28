@@ -520,6 +520,55 @@ double FractionalPacking::compute_delta_phi_x() {
     return delta_phi_x;
 }
 
+void FractionalPacking::update(int demand_index, const Flow &old_fxi, const Flow &flow_x_i){
+    high_resolution_clock::time_point t2 = high_resolution_clock::now();
+    //double low = 1/pow(_alpha, 3);
+    //double low = 1/20.0/_alpha/_alpha/(_rou+_alpha);
+    vector<double> ax(change_edges.size() + 1, 0);
+    double ax_m = _u.back();
+    vector<double> ax_star(change_edges.size() + 1, 0);
+    double ax_star_m = _u.back();
+    int index = 0;
+    for (const auto &i: change_edges) {
+        ax[index] = _u[i];
+        ax_star[index++] = _u[i] + bw_change[i] * inverse_capacity[i];
+        ax_star_m += bw_change[i] * beta[i];
+    }
+    ax[ax.size() - 1] = ax_m;
+    ax_star[ax.size() - 1] = ax_star_m;
+    double theta = compute_theta_newton_raphson(ax, ax_star, 0.01, 0, 1.0);
+    Flow target_fxi = update_flow(old_fxi, flow_x_i, theta);
+    solution.rm_flow(demand_index, bw_change, change_edges);
+    solution.add_flow(demand_index, target_fxi, bw_change, change_edges);
+    double old_potential = _potential;
+    double new_potential = update_potential_function();
+    if (new_potential < old_potential) {
+        non_update=0;
+        improve_flag=true;
+        update_mab(demand_index, 1 - new_potential / old_potential);
+        update_count++;
+    } else {
+        non_update++;
+        if(improve_flag){
+            for(int i=0; i<improve.size();i++){
+                improve[i]=true;
+            }
+            improve_flag=false;
+        }
+        improve[demand_index]=false;
+        update_mab(demand_index, 0);
+        solution.rm_flow(demand_index, bw_change, change_edges);
+        solution.add_flow(demand_index, old_fxi, bw_change, change_edges);
+        update_potential_function();
+    }
+    if (time_debug) {
+        high_resolution_clock::time_point t3 = high_resolution_clock::now();
+        duration<double, std::micro> time_span = t3 - t2;
+        update_time += time_span.count() / 1000;
+    }
+
+}
+
 void FractionalPacking::iteration() {
     /*
      * at each iteraion, compute the new cost, then choose an x_i to optimize, then update x..
@@ -572,56 +621,11 @@ void FractionalPacking::iteration() {
         }
     }
     if (flow_change) {
-        //double low = 1/pow(_alpha, 3);
-        //double low = 1/20.0/_alpha/_alpha/(_rou+_alpha);
-        vector<double> ax(change_edges.size() + 1, 0);
-        double ax_m = _u.back();
-        vector<double> ax_star(change_edges.size() + 1, 0);
-        double ax_star_m = _u.back();
-        int index = 0;
-        for (const auto &i: change_edges) {
-            ax[index] = _u[i];
-            ax_star[index++] = _u[i] + bw_change[i] * inverse_capacity[i];
-            ax_star_m += bw_change[i] * beta[i];
-        }
-        ax[ax.size() - 1] = ax_m;
-        ax_star[ax.size() - 1] = ax_star_m;
-        double theta = compute_theta_newton_raphson(ax, ax_star, 0.01, 0, 1.0);
-        Flow target_fxi = update_flow(old_fxi, flow_x_i, theta);
-        solution.rm_flow(demand_index, bw_change, change_edges);
-        solution.add_flow(demand_index, target_fxi, bw_change, change_edges);
-        double old_potential = _potential;
-        double new_potential = update_potential_function();
-        if (new_potential < old_potential) {
-            non_update=0;
-            improve_flag=true;
-            update_mab(demand_index, 1 - new_potential / old_potential);
-            update_count++;
-            if (time_debug) {
-                high_resolution_clock::time_point t3 = high_resolution_clock::now();
-                duration<double, std::micro> time_span = t3 - t2;
-                iteration_time += time_span.count() / 1000;
-            }
-            return;
-        } else {
-            non_update++;
-            if(improve_flag){
-                for(int i=0; i<improve.size();i++){
-                    improve[i]=true;
-                }
-                improve_flag=false;
-            }
-            improve[demand_index]=false;
-            update_mab(demand_index, 0);
-            solution.rm_flow(demand_index, bw_change, change_edges);
-            solution.add_flow(demand_index, old_fxi, bw_change, change_edges);
-            update_potential_function();
-            if (time_debug) {
-                high_resolution_clock::time_point t3 = high_resolution_clock::now();
-                duration<double, std::micro> time_span = t3 - t2;
-                iteration_time += time_span.count() / 1000;
-            }
-            return;
+        update(demand_index, old_fxi, flow_x_i);
+        if (time_debug) {
+            high_resolution_clock::time_point t3 = high_resolution_clock::now();
+            duration<double, std::micro> time_span = t3 - t2;
+            iteration_time += time_span.count() / 1000;
         }
     } else {
         non_update++;

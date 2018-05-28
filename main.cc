@@ -61,6 +61,7 @@ int main(int argc, char* argv[]) {
 
         cout<<"update_flow_time: "<<fp.update_flow_time<<endl;
         cout<<"iteration_time: "<<fp.iteration_time<<endl;
+        cout<<"update_time: "<<fp.update_time<<endl;
         cout<<"iteration_all_time: "<<fp.iteration_all_time<<endl;
         cout<<"draw index time: "<<fp.draw_index_time<<endl;
 
