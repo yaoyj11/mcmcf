@@ -596,12 +596,14 @@ void FractionalPacking::iteration() {
         double c = _y[i]*inverse_capacity[i] + _y.back()*beta[i];
         maxcost=c>maxcost?c:maxcost;
         dual_cost->operator[](graph.arcFromId(i)) = int(_y[i]*inverse_capacity[i] + _y.back()*beta[i]);
+        //according to the paper, "fast approximation algorithms for multicommodity problem. The capacity constraint should be \lambda * u, since Ax<lambda* u, constraint u cannot ensure the second inequality."
         relax_cap->operator[](graph.arcFromId(i)) = int(_rou * capacity_map[i]*SCALE);
     }
     // let x = x_1 * x_2 ... * x_k, choose x_i in round-robin order, update x_i
+    
+    //DEV NOTE: add a for loop here to compute min_cost_flow in a batch
     int demand_index = draw_demand_index();
     Demand demand_i = demands[demand_index];
-    //TODO: according to the paper, "fast approximation algorithms for multicommodity problem. The capacity constraint should be \lambda * u, since Ax<lambda* u, constraint u cannot ensure the second inequality."
     Flow flow_x_i = min_cost_flow(demand_i.src, demand_i.dst, demand_i.val,SCALE, dual_cost, relax_cap);
     Flow old_fxi = solution.rm_flow(demand_index, bw_change, change_edges);
     solution.add_flow(demand_index, flow_x_i, bw_change, change_edges);
@@ -621,6 +623,7 @@ void FractionalPacking::iteration() {
         }
     }
     if (flow_change) {
+        //DEV NOTE: accumulate changes in parallel but dont update the solution here
         update(demand_index, old_fxi, flow_x_i);
         if (time_debug) {
             high_resolution_clock::time_point t3 = high_resolution_clock::now();
@@ -630,6 +633,7 @@ void FractionalPacking::iteration() {
     } else {
         non_update++;
         update_mab(demand_index, 0);
+        //NOTE lazy update on improve_flag, if the update on demand_i improves the potential, then there should be some
         if(improve_flag){
             for(int i=0; i<improve.size();i++){
                 improve[i]=true;
