@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
     else {
         filenumber = "738086";
     }
-    FractionalPacking fp("/home/yaoyj11/project/mcmcf/data/test-mcf"+filenumber+".net");
+    FractionalPacking fp("/Users/yaoyj11/project/mcmcf/data/test-mcf"+filenumber+".net");
     high_resolution_clock::time_point t1 = high_resolution_clock::now();
     fp.time_debug=true;
     bool suc = true;
