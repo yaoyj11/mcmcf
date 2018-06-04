@@ -2,9 +2,7 @@ CC=g++
 FLAGS=-std=c++11 -O3
 LIB = -lemon
 
-all: mcmcf test test-or
-	./test
-	./test-or
+all: mcmcf test
 
 mcmcf:flow_solution.o main.o fractional_packing.o
 	$(CC) $(FLAGS) $(LIB) -o mcmcf main.o flow_solution.o fractional_packing.o
@@ -12,8 +10,6 @@ mcmcf:flow_solution.o main.o fractional_packing.o
 test:flow_solution.o test.o fractional_packing.o
 	$(CC) $(FLAGS) $(LIB) -o test test.o flow_solution.o fractional_packing.o
 
-test-or: test-or.o
-	$(CC) $(FLAGS) $(LIB) -lortools -o test-or test-or.o
 
 flow_solution.o: flow_solution.cc demand.h flow_solution.h
 	$(CC) $(FLAGS) -c flow_solution.cc
@@ -28,7 +24,7 @@ test.o: test.cc fractional_packing.h
 	$(CC) $(FLAGS) -c test.cc
 
 test-or.o: test-or.cc
-	$(CC) $(FLAGS) -c test-or.cc
+	$(CC) $(FLAGS) -lortools -c test-or.cc
 clean:
 	rm *.o
 	rm mcmcf
