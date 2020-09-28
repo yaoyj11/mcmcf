@@ -3,7 +3,7 @@
 Using Lemon Graph Library (http://lemon.cs.elte.hu/trac/lemon) for minimum cost flow subroutine. Minimum cost flow algorithm from Google OR tools also works but slower. 
 
 Todo:
-1. Control the error bound with numerical analysis
+1. Control the error bound with numerical error analysis
 2. Leverage the old states of network simplex for faster min-cost flow subroutine.
 
 References:
